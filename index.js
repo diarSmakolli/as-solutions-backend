@@ -60,9 +60,15 @@ dotenv.config();
 
 // corsOptions
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "https://as-frontend-snowy.vercel.app/",
+  origin: "https://as-frontend-snowy.vercel.app/",
   credentials: true,
 }));
+
+app.options('*', cors({
+    origin: 'https://as-frontend-snowy.vercel.app/',
+    credentials: true,
+}));
+
 
 app.use(function (req, res, next) {
     res.header('Access-Control-Allow-Origin', 'https://as-frontend-snowy.vercel.app/');

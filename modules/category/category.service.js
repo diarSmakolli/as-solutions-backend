@@ -499,6 +499,16 @@ class CategoryService {
      */
     async getCategoryBySlug(slug) {
         try {
+            // Validate slug
+            const slugValidation = this.validateCategorySlug(slug);
+            if (!slugValidation.isValid) {
+                throw {
+                    status: 'error',
+                    statusCode: 400,
+                    message: slugValidation.error
+                };
+            }
+
             const category = await Category.findOne({
                 where: { 
                     slug: slug.trim(),

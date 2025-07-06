@@ -42,11 +42,13 @@ router.get(
 );
 router.put(
   "/mark-active/:companyId",
+  authGuard,
   roleGuard("global-administrator", "administrator"),
   CompanyController.makeCompanyActive
 );
 router.get(
   "/companies-list",
+  authGuard,
   roleGuard("global-administrator", "administrator"),
   CompanyController.getAllCompaniesList
 );

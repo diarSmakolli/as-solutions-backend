@@ -153,8 +153,7 @@ class AdministrationService {
     return (
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.connection?.remoteAddress ||
-      req.socket?.remoteAddress ||
-      "37.35.69.48"
+      req.socket?.remoteAddress
     ); // Keeping original fallback IP
   }
 
@@ -434,11 +433,19 @@ class AdministrationService {
         expiresIn: "24h",
       });
 
+      // res.cookie("accessToken", accessToken, {
+      //   httpOnly: true,
+      //   secure: process.env.NODE_ENV === "production",
+      //   sameSite: "strict",
+      //   maxAge: CONSTANTS.SESSION_EXPIRY,
+      // });
+
       res.cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true, // true in production
+        sameSite: "none",
         maxAge: CONSTANTS.SESSION_EXPIRY,
+        domain: ".onrender.com"
       });
 
       const tokenHash = crypto
@@ -500,7 +507,12 @@ class AdministrationService {
           },
         });
 
-        res.clearCookie("accessToken");
+        res.clearCookie("accessToken", {
+          httpOnly: true,
+          secure: true,
+          sameSite: "none",
+          domain: ".onrender.com"
+        });
       }
 
       return {

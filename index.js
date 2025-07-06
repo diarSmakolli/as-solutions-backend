@@ -18,14 +18,60 @@ const productRoute = require("./modules/product/product.route");
 const app = express();
 dotenv.config();
 
-app.use(
-  cors({
-    origin: "https://as-frontend-snowy.vercel.app",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  })
-);
+// app.use(
+//   cors({
+//     origin: "https://as-frontend-snowy.vercel.app",
+//     credentials: true,
+//     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+//     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+//   })
+// );
+
+// CORS Configuration for Cross-Origin Cookies
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://as-frontend-snowy.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Log rejected origin for debugging
+    logger.warn(`CORS: Rejected origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true, // CRITICAL: Enable credentials
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With', 
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'Cookie', // Allow Cookie header
+    'Set-Cookie' // Allow Set-Cookie header
+  ],
+  exposedHeaders: [
+    'Set-Cookie', // Expose Set-Cookie header to frontend
+    'Authorization'
+  ],
+  optionsSuccessStatus: 200, // For legacy browser support
+  maxAge: 86400 // Cache preflight for 24 hours
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
 
 app.use(cookieParser());
 app.use(bodyParser.json());

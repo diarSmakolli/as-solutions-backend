@@ -3,6 +3,7 @@ const logger = require("../../logger/logger");
 const Administration = require("./entities/administration.entity");
 
 class AdministrationController {
+  
   // create account on the platform
   async createAdministrationAccountExceptSupplier(req, res, next) {
     const accountData = req.body;

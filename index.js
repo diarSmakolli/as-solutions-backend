@@ -60,9 +60,17 @@ dotenv.config();
 
 // corsOptions
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+  origin: process.env.CORS_ORIGIN || "https://as-frontend-snowy.vercel.app/",
   credentials: true,
 }));
+
+app.use(function (req, res, next) {
+    res.header('Access-Control-Allow-Origin', 'https://as-frontend-snowy.vercel.app/');
+    res.header("Access-Control-Allow-Headers", "*");
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    next();
+}); 
 
 app.use(cookieParser());
 app.use(bodyParser.json());

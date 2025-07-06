@@ -18,72 +18,14 @@ const productRoute = require("./modules/product/product.route");
 const app = express();
 dotenv.config();
 
-// app.use(
-//   cors({
-//     origin: process.env.CORS_ORIGIN,
-//     credentials: true,
-//   })
-// );
-// Enhanced CORS configuration for production
-// const corsOptions = {
-//   origin: function (origin, callback) {
-//     // Allow requests with no origin (like mobile apps, Postman, etc.)
-//     if (!origin) return callback(null, true);
-    
-//     // Get allowed origins from environment variable
-//     const allowedOrigins = process.env.CORS_ORIGIN 
-//       ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-//       : ['http://localhost:3000']; // Default for development
-    
-//     if (allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       logger.warn(`CORS: Origin ${origin} not allowed`);
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   },
-//   credentials: true, // Allow cookies and credentials
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-//   allowedHeaders: [
-//     'Origin',
-//     'X-Requested-With',
-//     'Content-Type',
-//     'Accept',
-//     'Authorization',
-//     'Cache-Control',
-//     'X-Access-Token'
-//   ],
-//   exposedHeaders: ['set-cookie'], // Expose cookies to frontend
-//   maxAge: 86400 // Cache preflight requests for 24 hours
-// };
-
-
-// corsOptions
-// app.use(cors({
-//   origin: "https://as-frontend-snowy.vercel.app",
-//   credentials: true,
-// }));
-
-// app.options('*', cors({
-//     origin: 'https://as-frontend-snowy.vercel.app',
-//     credentials: true,
-// }));
-
-
-// app.use(function (req, res, next) {
-//     res.header('Access-Control-Allow-Origin', 'https://as-frontend-snowy.vercel.app');
-//     res.header("Access-Control-Allow-Headers", "*");
-//     res.header('Access-Control-Allow-Credentials', 'true');
-//     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-//     next();
-// }); 
-
-app.use(cors({
-  origin: 'https://as-frontend-snowy.vercel.app',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-}));
+app.use(
+  cors({
+    origin: "https://as-frontend-snowy.vercel.app",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  })
+);
 
 app.use(cookieParser());
 app.use(bodyParser.json());
@@ -115,15 +57,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-
 // configure main server
 async function init() {
   try {
     await sequelize.authenticate();
     logger.info("Database connected.");
 
-    await sequelize.sync({ alter: true });
-    logger.info('All models synchronized successfully.');
+    // await sequelize.sync({ alter: true });
+    // logger.info("All models synchronized successfully.");
 
     const port = process.env.PORT || 8085;
 

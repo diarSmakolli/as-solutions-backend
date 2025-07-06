@@ -41,7 +41,7 @@ router.put('/:id/edit', authGuard, roleGuard("global-administrator", "administra
 });
 
 // Get products by category with filters and facets
-router.get('/category/:categoryId', authGuard, (req, res, next) => {
+router.get('/category/:categoryId', (req, res, next) => {
   ProductController.getProductsByCategory(req, res, next);
 });
 
@@ -73,7 +73,6 @@ router.get('/explore-all', (req, res, next) => {
 router.get('/search', (req, res, next) => {
   ProductController.searchProducts(req, res, next);
 });
-
 
 // Get product details by ID
 router.get('/:id', authGuard, (req, res, next) => {

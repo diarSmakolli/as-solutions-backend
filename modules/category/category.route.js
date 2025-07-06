@@ -19,8 +19,6 @@ router.post(
 // Get all categories (with hierarchical structure)
 router.get(
   "/",
-  authGuard,
-  roleGuard("global-administrator", "administrator"),
   CategoryController.getAllCategories
 );
 
@@ -69,6 +67,6 @@ router.delete(
 );
 
 // Get category by slug with children (this should come before /:id routes)
-router.get("/slug/:slug", authGuard, CategoryController.getCategoryBySlug);
+router.get("/slug/:slug", CategoryController.getCategoryBySlug);
 
 module.exports = router;

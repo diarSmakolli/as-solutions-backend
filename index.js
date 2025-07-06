@@ -25,39 +25,45 @@ dotenv.config();
 //   })
 // );
 // Enhanced CORS configuration for production
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     // Allow requests with no origin (like mobile apps, Postman, etc.)
+//     if (!origin) return callback(null, true);
     
-    // Get allowed origins from environment variable
-    const allowedOrigins = process.env.CORS_ORIGIN 
-      ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-      : ['http://localhost:3000']; // Default for development
+//     // Get allowed origins from environment variable
+//     const allowedOrigins = process.env.CORS_ORIGIN 
+//       ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+//       : ['http://localhost:3000']; // Default for development
     
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      logger.warn(`CORS: Origin ${origin} not allowed`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true, // Allow cookies and credentials
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: [
-    'Origin',
-    'X-Requested-With',
-    'Content-Type',
-    'Accept',
-    'Authorization',
-    'Cache-Control',
-    'X-Access-Token'
-  ],
-  exposedHeaders: ['set-cookie'], // Expose cookies to frontend
-  maxAge: 86400 // Cache preflight requests for 24 hours
-};
+//     if (allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       logger.warn(`CORS: Origin ${origin} not allowed`);
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true, // Allow cookies and credentials
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: [
+//     'Origin',
+//     'X-Requested-With',
+//     'Content-Type',
+//     'Accept',
+//     'Authorization',
+//     'Cache-Control',
+//     'X-Access-Token'
+//   ],
+//   exposedHeaders: ['set-cookie'], // Expose cookies to frontend
+//   maxAge: 86400 // Cache preflight requests for 24 hours
+// };
 
-app.use(cors(corsOptions));
+
+// corsOptions
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+  credentials: true,
+}));
+
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(

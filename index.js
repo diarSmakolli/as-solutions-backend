@@ -27,7 +27,7 @@ dotenv.config();
 //   })
 // );
 
-// CORS Configuration for Cross-Origin Cookies
+// Enhanced CORS Configuration
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
@@ -57,21 +57,22 @@ const corsOptions = {
     'Accept',
     'Authorization',
     'Cache-Control',
-    'Cookie', // Allow Cookie header
-    'Set-Cookie' // Allow Set-Cookie header
+    'Cookie',
+    'Set-Cookie'
   ],
   exposedHeaders: [
-    'Set-Cookie', // Expose Set-Cookie header to frontend
+    'Set-Cookie',
     'Authorization'
   ],
-  optionsSuccessStatus: 200, // For legacy browser support
-  maxAge: 86400 // Cache preflight for 24 hours
+  optionsSuccessStatus: 200,
+  maxAge: 86400
 };
 
 app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
+
 
 app.use(cookieParser());
 app.use(bodyParser.json());

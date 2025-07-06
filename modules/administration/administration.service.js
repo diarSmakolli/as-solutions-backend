@@ -445,7 +445,6 @@ class AdministrationService {
         secure: true, // true in production
         sameSite: "none",
         maxAge: CONSTANTS.SESSION_EXPIRY,
-        domain: ".onrender.com"
       });
 
       const tokenHash = crypto
@@ -511,7 +510,6 @@ class AdministrationService {
           httpOnly: true,
           secure: true,
           sameSite: "none",
-          domain: ".onrender.com"
         });
       }
 

@@ -68,9 +68,7 @@ app.use(
 app.use(express.json());
 
 // Security Middleware
-// Security middleware
 app.use((req, res, next) => {
-  // Security headers
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-XSS-Protection", "1; mode=block");
@@ -86,24 +84,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// Handle 404 for API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({
-    status: 'error',
-    statusCode: 404,
-    message: 'API endpoint not found'
-  });
-});
 
 // API definitions
 app.use("/api/administrations", administrationRoute);
@@ -140,11 +120,6 @@ async function init() {
 
     const expressServer = app.listen(port, () => {
       logger.info(`Application is running on port ${port}`);
-      logger.info(`Application is running on port ${port}`);
-      logger.info(`Environment: ${process.env.NODE_ENV || "development"}`);
-      logger.info(
-        `CORS Origins: ${process.env.CORS_ORIGIN || "http://localhost:3000"}`
-      );
     });
 
     const shutdown = (signal) => {

@@ -1,0 +1,606 @@
+const { Op } = require('sequelize');
+const Discount = require('../entities/discount.entity');
+const DiscountUsage = require('../entities/discount-usage.entity');
+const Product = require('../../product/entities/product.entity');
+const ProductCategory = require('../../product/entities/product.category.entity');
+
+class DiscountService {
+
+  // ================================
+  // 1. AMOUNT OFF PRODUCTS DISCOUNTS
+  // ================================
+
+  static async createAmountOffProductsDiscount({
+    title,
+    description = null,
+    value_type, // 'percentage' or 'fixed_amount'
+    value,
+    applies_to, // 'specific_products', 'all_products', 'categories', 'brands'
+    target_product_ids = null,
+    target_category_ids = null,
+    target_brands = null,
+    start_date,
+    end_date,
+    company_id,
+    created_by
+  }) {
+    
+    const discount = await Discount.create({
+      title,
+      description,
+      discount_type: 'amount_off_products',
+      method: 'automatic',
+      value_type,
+      value,
+      applies_to,
+      target_product_ids,
+      target_category_ids,
+      target_brands,
+      start_date,
+      end_date,
+      status: 'draft',
+      company_id,
+      created_by
+    });
+
+    // If start date is now or past, activate immediately
+    if (start_date <= new Date()) {
+      await this.activateAmountOffProductsDiscount(discount.id);
+    }
+
+    return discount;
+  }
+
+  static async activateAmountOffProductsDiscount(discountId) {
+    const discount = await Discount.findByPk(discountId);
+    
+    if (!discount || discount.discount_type !== 'amount_off_products') {
+      throw new Error('Invalid discount for product activation');
+    }
+
+    // Get target products
+    const products = await this.getTargetProducts(discount);
+    
+    let affectedCount = 0;
+    
+    for (const product of products) {
+      // Remove any existing discount first
+      if (product.active_discount_id) {
+        await this.removeProductDiscount(product.id);
+      }
+      
+      // Apply new discount
+      const discountAmount = this.calculateProductDiscountAmount(product, discount);
+      
+      if (discountAmount > 0) {
+        await this.applyProductDiscount(product, discount, discountAmount);
+        affectedCount++;
+      }
+    }
+
+    // Update discount status
+    await Discount.update({
+      status: 'active',
+      products_affected_count: affectedCount
+    }, {
+      where: { id: discountId }
+    });
+
+    return affectedCount;
+  }
+
+  static async getTargetProducts(discount) {
+    let whereClause = {
+      company_id: discount.company_id,
+      status: 'active',
+      is_active: true,
+      is_published: true
+    };
+
+    switch (discount.applies_to) {
+      case 'all_products':
+        return await Product.findAll({ where: whereClause });
+
+      case 'specific_products':
+        whereClause.id = { [Op.in]: discount.target_product_ids };
+        return await Product.findAll({ where: whereClause });
+
+      case 'categories':
+        const categoryProducts = await ProductCategory.findAll({
+          where: { category_id: { [Op.in]: discount.target_category_ids } },
+          include: [{
+            model: Product,
+            as: 'product',
+            where: whereClause
+          }]
+        });
+        return categoryProducts.map(cp => cp.product);
+
+      case 'brands':
+        whereClause.brand = { [Op.in]: discount.target_brands };
+        return await Product.findAll({ where: whereClause });
+
+      default:
+        return [];
+    }
+  }
+
+  static calculateProductDiscountAmount(product, discount) {
+    if (discount.value_type === 'percentage') {
+      return (product.regular_price_nett * discount.value) / 100;
+    } else {
+      return Math.min(discount.value, product.regular_price_nett);
+    }
+  }
+
+  static async applyProductDiscount(product, discount, discountAmount) {
+    const percentage = (discountAmount / product.regular_price_nett) * 100;
+    
+    await Product.update({
+      is_discounted: true,
+      discount_percentage_nett: percentage,
+      discount_percentage_gross: percentage,
+      final_price_nett: product.regular_price_nett - discountAmount,
+      final_price_gross: product.regular_price_gross - (product.regular_price_gross * percentage / 100),
+      active_discount_id: discount.id,
+      discount_applied_at: new Date(),
+      discount_expires_at: discount.end_date
+    }, {
+      where: { id: product.id }
+    });
+  }
+
+  static async removeProductDiscount(productId) {
+    const product = await Product.findByPk(productId);
+    
+    if (!product || !product.is_discounted) return;
+
+    await Product.update({
+      is_discounted: false,
+      discount_percentage_nett: 0,
+      discount_percentage_gross: 0,
+      final_price_nett: product.regular_price_nett,
+      final_price_gross: product.regular_price_gross,
+      active_discount_id: null,
+      discount_applied_at: null,
+      discount_expires_at: null
+    }, {
+      where: { id: productId }
+    });
+  }
+
+  // ================================
+  // 2. BUY X GET Y DISCOUNTS
+  // ================================
+
+  static async createBuyXGetYDiscount({
+    title,
+    description = null,
+    method, // 'automatic' or 'discount_code'
+    code = null, // required if method is 'discount_code'
+    customer_buys_type, // 'minimum_quantity' or 'minimum_purchase_amount'
+    customer_buys_value,
+    customer_buys_product_ids = null, // required if minimum_quantity
+    customer_gets_quantity,
+    customer_gets_product_ids,
+    customer_gets_discount_type, // 'percentage', 'amount_off_each', 'free'
+    customer_gets_discount_value = null, // required if not 'free'
+    maximum_discount_uses = null,
+    start_date,
+    end_date,
+    company_id,
+    created_by
+  }) {
+    
+    const discount = await Discount.create({
+      title,
+      description,
+      discount_type: 'buy_x_get_y',
+      method,
+      code,
+      buy_x_get_y_config: {
+        customer_buys: {
+          type: customer_buys_type,
+          value: customer_buys_value,
+          product_ids: customer_buys_product_ids
+        },
+        customer_gets: {
+          quantity: customer_gets_quantity,
+          product_ids: customer_gets_product_ids,
+          discount_type: customer_gets_discount_type,
+          discount_value: customer_gets_discount_value
+        }
+      },
+      maximum_discount_uses,
+      start_date,
+      end_date,
+      status: start_date <= new Date() ? 'active' : 'draft',
+      company_id,
+      created_by
+    });
+
+    return discount;
+  }
+
+  // ================================
+  // 3. AMOUNT OFF ORDER DISCOUNTS
+  // ================================
+
+  static async createAmountOffOrderDiscount({
+    title,
+    description = null,
+    code, // required - always discount code method
+    value_type, // 'percentage' or 'fixed_amount'
+    value,
+    minimum_requirements_type = 'no_minimum', // 'no_minimum', 'minimum_purchase_amount', 'minimum_quantity_items'
+    minimum_requirements_value = null,
+    maximum_discount_uses = 1,
+    start_date,
+    end_date,
+    company_id,
+    created_by
+  }) {
+    
+    const discount = await Discount.create({
+      title,
+      description,
+      discount_type: 'amount_off_order',
+      method: 'discount_code',
+      code,
+      value_type,
+      value,
+      minimum_requirements: {
+        type: minimum_requirements_type,
+        value: minimum_requirements_value
+      },
+      maximum_discount_uses,
+      start_date,
+      end_date,
+      status: start_date <= new Date() ? 'active' : 'draft',
+      company_id,
+      created_by
+    });
+
+    return discount;
+  }
+
+  // ================================
+  // 4. FREE SHIPPING DISCOUNTS
+  // ================================
+
+  static async createFreeShippingDiscount({
+    title,
+    description = null,
+    method, // 'automatic' or 'discount_code'
+    code = null, // required if method is 'discount_code'
+    minimum_requirements_type = 'no_minimum', // 'no_minimum', 'minimum_purchase_amount', 'minimum_quantity_items'
+    minimum_requirements_value = null,
+    maximum_discount_uses = null,
+    start_date,
+    end_date,
+    company_id,
+    created_by
+  }) {
+    
+    const discount = await Discount.create({
+      title,
+      description,
+      discount_type: 'free_shipping',
+      method,
+      code,
+      minimum_requirements: {
+        type: minimum_requirements_type,
+        value: minimum_requirements_value
+      },
+      maximum_discount_uses,
+      start_date,
+      end_date,
+      status: start_date <= new Date() ? 'active' : 'draft',
+      company_id,
+      created_by
+    });
+
+    return discount;
+  }
+
+  // ================================
+  // 5. CHECKOUT DISCOUNT APPLICATION
+  // ================================
+
+  static async applyCheckoutDiscounts(cartData, discountCode = null, customerId = null) {
+    const { items, subtotal, total_quantity, shipping_cost = 0, company_id } = cartData;
+    
+    let applicableDiscounts = [];
+    
+    // Get automatic discounts
+    const automaticDiscounts = await this.getAutomaticCheckoutDiscounts(company_id);
+    applicableDiscounts = applicableDiscounts.concat(automaticDiscounts);
+    
+    // Get discount code discount if provided
+    if (discountCode) {
+      const codeDiscount = await this.getDiscountByCode(discountCode, company_id);
+      if (codeDiscount) {
+        applicableDiscounts.push(codeDiscount);
+      }
+    }
+
+    let totalDiscount = 0;
+    let shippingDiscount = 0;
+    let appliedDiscounts = [];
+
+    for (const discount of applicableDiscounts) {
+      if (await this.isDiscountUsageLimitReached(discount)) {
+        continue;
+      }
+
+      const result = await this.calculateCheckoutDiscount(discount, cartData);
+      
+      if (result.discount_amount > 0) {
+        if (discount.discount_type === 'free_shipping') {
+          shippingDiscount += result.discount_amount;
+        } else {
+          totalDiscount += result.discount_amount;
+        }
+        
+        appliedDiscounts.push({
+          discount,
+          discount_amount: result.discount_amount,
+          details: result.details
+        });
+
+        // Track usage
+        await this.trackDiscountUsage(discount.id, customerId, null, result.discount_amount, result.details);
+      }
+    }
+
+    return {
+      total_discount: totalDiscount,
+      shipping_discount: shippingDiscount,
+      applied_discounts: appliedDiscounts,
+      final_total: subtotal - totalDiscount + shipping_cost - shippingDiscount
+    };
+  }
+
+  static async getAutomaticCheckoutDiscounts(companyId) {
+    const now = new Date();
+    
+    return await Discount.findAll({
+      where: {
+        company_id: companyId,
+        method: 'automatic',
+        discount_type: { [Op.in]: ['buy_x_get_y', 'free_shipping'] },
+        status: 'active',
+        start_date: { [Op.lte]: now },
+        end_date: { [Op.gte]: now }
+      }
+    });
+  }
+
+  static async getDiscountByCode(code, companyId) {
+    const now = new Date();
+    
+    return await Discount.findOne({
+      where: {
+        code,
+        company_id: companyId,
+        method: 'discount_code',
+        status: 'active',
+        start_date: { [Op.lte]: now },
+        end_date: { [Op.gte]: now }
+      }
+    });
+  }
+
+  static async calculateCheckoutDiscount(discount, cartData) {
+    switch (discount.discount_type) {
+      case 'buy_x_get_y':
+        return this.calculateBuyXGetYDiscount(discount, cartData);
+      
+      case 'amount_off_order':
+        return this.calculateAmountOffOrderDiscount(discount, cartData);
+      
+      case 'free_shipping':
+        return this.calculateFreeShippingDiscount(discount, cartData);
+      
+      default:
+        return { discount_amount: 0, details: {} };
+    }
+  }
+
+  static calculateBuyXGetYDiscount(discount, cartData) {
+    const config = discount.buy_x_get_y_config;
+    const { customer_buys, customer_gets } = config;
+    
+    // Check if customer meets buying criteria
+    let qualifies = false;
+    
+    if (customer_buys.type === 'minimum_quantity') {
+      const eligibleQuantity = cartData.items
+        .filter(item => customer_buys.product_ids.includes(item.product_id))
+        .reduce((sum, item) => sum + item.quantity, 0);
+      
+      qualifies = eligibleQuantity >= customer_buys.value;
+    } else if (customer_buys.type === 'minimum_purchase_amount') {
+      qualifies = cartData.subtotal >= customer_buys.value;
+    }
+
+    if (!qualifies) {
+      return { discount_amount: 0, details: { reason: 'Does not meet buying criteria' } };
+    }
+
+    // Calculate discount on "get" products
+    const getItems = cartData.items.filter(item => 
+      customer_gets.product_ids.includes(item.product_id)
+    );
+
+    let discountAmount = 0;
+    const discountedItems = [];
+
+    for (const item of getItems) {
+      const eligibleQuantity = Math.min(item.quantity, customer_gets.quantity);
+      
+      if (customer_gets.discount_type === 'free') {
+        discountAmount += item.price * eligibleQuantity;
+      } else if (customer_gets.discount_type === 'percentage') {
+        const itemDiscount = (item.price * eligibleQuantity * customer_gets.discount_value) / 100;
+        discountAmount += itemDiscount;
+      } else if (customer_gets.discount_type === 'amount_off_each') {
+        discountAmount += customer_gets.discount_value * eligibleQuantity;
+      }
+
+      discountedItems.push({
+        product_id: item.product_id,
+        quantity: eligibleQuantity,
+        original_price: item.price,
+        discount_applied: discountAmount / eligibleQuantity
+      });
+    }
+
+    return {
+      discount_amount: discountAmount,
+      details: {
+        type: 'buy_x_get_y',
+        discounted_items: discountedItems
+      }
+    };
+  }
+
+  static calculateAmountOffOrderDiscount(discount, cartData) {
+    // Check minimum requirements
+    const requirements = discount.minimum_requirements;
+    
+    if (requirements.type === 'minimum_purchase_amount' && cartData.subtotal < requirements.value) {
+      return { discount_amount: 0, details: { reason: 'Minimum purchase amount not met' } };
+    }
+    
+    if (requirements.type === 'minimum_quantity_items' && cartData.total_quantity < requirements.value) {
+      return { discount_amount: 0, details: { reason: 'Minimum quantity not met' } };
+    }
+
+    // Calculate discount
+    let discountAmount = 0;
+    
+    if (discount.value_type === 'percentage') {
+      discountAmount = (cartData.subtotal * discount.value) / 100;
+    } else {
+      discountAmount = Math.min(discount.value, cartData.subtotal);
+    }
+
+    return {
+      discount_amount: discountAmount,
+      details: {
+        type: 'amount_off_order',
+        original_amount: cartData.subtotal,
+        discount_type: discount.value_type,
+        discount_value: discount.value
+      }
+    };
+  }
+
+  static calculateFreeShippingDiscount(discount, cartData) {
+    // Check minimum requirements
+    const requirements = discount.minimum_requirements;
+    
+    if (requirements.type === 'minimum_purchase_amount' && cartData.subtotal < requirements.value) {
+      return { discount_amount: 0, details: { reason: 'Minimum purchase amount not met' } };
+    }
+    
+    if (requirements.type === 'minimum_quantity_items' && cartData.total_quantity < requirements.value) {
+      return { discount_amount: 0, details: { reason: 'Minimum quantity not met' } };
+    }
+
+    return {
+      discount_amount: cartData.shipping_cost || 0,
+      details: {
+        type: 'free_shipping',
+        original_shipping_cost: cartData.shipping_cost
+      }
+    };
+  }
+
+  // ================================
+  // 6. UTILITY METHODS
+  // ================================
+
+  static async isDiscountUsageLimitReached(discount) {
+    if (!discount.maximum_discount_uses) return false;
+    
+    return discount.current_usage_count >= discount.maximum_discount_uses;
+  }
+
+  static async trackDiscountUsage(discountId, customerId, orderId, discountAmount, details) {
+    await DiscountUsage.create({
+      discount_id: discountId,
+      customer_id: customerId,
+      order_id: orderId,
+      discount_amount: discountAmount,
+      usage_details: details,
+      company_id: details.company_id
+    });
+
+    // Increment usage count
+    await Discount.increment('current_usage_count', {
+      where: { id: discountId }
+    });
+  }
+
+  // ================================
+  // 7. CRON JOB METHODS
+  // ================================
+
+  static async expireDiscounts() {
+    const now = new Date();
+
+    // Expire product discounts
+    const expiredProductDiscounts = await Product.findAll({
+      where: {
+        is_discounted: true,
+        discount_expires_at: { [Op.lt]: now }
+      }
+    });
+
+    for (const product of expiredProductDiscounts) {
+      await this.removeProductDiscount(product.id);
+    }
+
+    // Update discount statuses
+    await Discount.update({
+      status: 'expired'
+    }, {
+      where: {
+        status: 'active',
+        end_date: { [Op.lt]: now }
+      }
+    });
+
+    console.log(`Expired ${expiredProductDiscounts.length} product discounts`);
+  }
+
+  static async activateScheduledDiscounts() {
+    const now = new Date();
+
+    const scheduledDiscounts = await Discount.findAll({
+      where: {
+        status: 'draft',
+        start_date: { [Op.lte]: now },
+        end_date: { [Op.gt]: now }
+      }
+    });
+
+    for (const discount of scheduledDiscounts) {
+      if (discount.discount_type === 'amount_off_products') {
+        await this.activateAmountOffProductsDiscount(discount.id);
+      } else {
+        await Discount.update({
+          status: 'active'
+        }, {
+          where: { id: discount.id }
+        });
+      }
+    }
+
+    console.log(`Activated ${scheduledDiscounts.length} scheduled discounts`);
+  }
+}
+
+module.exports = DiscountService;

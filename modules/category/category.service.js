@@ -334,163 +334,356 @@ class CategoryService {
      * @param {Object} updateData - Updated category data
      * @returns {Promise<Object>} Updated category
      */
-    async editCategory(categoryId, updateData) {
-        try {
-            // Validate category ID
-            const idValidation = this.validateCategoryId(categoryId);
-            if (!idValidation.isValid) {
+    // async editCategory(categoryId, updateData) {
+    //     try {
+    //         // Validate category ID
+    //         const idValidation = this.validateCategoryId(categoryId);
+    //         if (!idValidation.isValid) {
+    //             throw {
+    //                 status: 'error',
+    //                 statusCode: 400,
+    //                 message: idValidation.error
+    //             };
+    //         }
+
+    //         // Validate update data with database checks, excluding current category
+    //         const validation = await this.validateCategoryData(updateData, true, categoryId);
+    //         if (!validation.isValid) {
+    //             throw {
+    //                 status: 'error',
+    //                 statusCode: 400,
+    //                 message: 'Validation failed',
+    //                 details: validation.errors
+    //             };
+    //         }
+
+    //         const category = await Category.findByPk(categoryId);
+    //         if (!category) {
+    //             throw {
+    //                 status: 'error',
+    //                 statusCode: 404,
+    //                 message: 'Category not found in our records.'
+    //             }
+    //         }
+            
+    //         const { name, description, image_url, parent_id, meta_title, sort_order } = updateData;
+
+    //         const existingCategory = await Category.findOne({
+    //             where: { name: name.trim() }
+    //         });
+
+    //         if(existingCategory) {
+    //             throw {
+    //                 status: 'error',
+    //                 statusCode: 400,
+    //                 message: `Category with name '${name.trim()}' already exists. Please choose a different name.`,
+    //             }
+    //         }
+
+    //         if (name && name.trim() !== category.name) {
+    //             const existingCategory = await Category.findOne({
+    //                 where: { 
+    //                     name: name.trim(),
+    //                     id: { [Op.ne]: categoryId }
+    //                 }
+    //             });
+
+    //             if(existingCategory) {
+    //                 throw {
+    //                     status: 'error',
+    //                     statusCode: 400,
+    //                     message: `Category with name '${name.trim()}' already exists. Please choose a different name.`,
+    //                 }
+    //             }
+    //         }
+            
+    //         let level = category.level;
+    //         let finalSlug = category.slug;
+
+    //         // Generate new slug if name changed and no manual slug provided
+    //         if (name && name.trim() !== category.name && !slug) {
+    //             finalSlug = await this.generateUniqueSlug(name, categoryId);
+    //         } else if (slug && slug !== category.slug) {
+    //             finalSlug = slug;
+    //         }
+            
+    //         // If parent_id is being changed
+    //         if (parent_id !== undefined && parent_id !== category.parent_id) {
+    //             if (parent_id) {
+    //                 const parentCategory = await Category.findByPk(parent_id);
+    //                 if (!parentCategory) {
+    //                     throw {
+    //                         status: 'error',
+    //                         statusCode: 404,
+    //                         message: 'New parent category not found in our records.'
+    //                     }
+    //                 }
+    //                 level = parentCategory.level + 1;
+                    
+    //                 // Update new parent to be marked as parent
+    //                 await Category.update(
+    //                     { is_parent: true },
+    //                     { where: { id: parent_id } }
+    //                 );
+    //             } else {
+    //                 level = 0;
+    //             }
+                
+    //             // Check if old parent still has children
+    //             if (category.parent_id) {
+    //                 const siblingCount = await Category.count({
+    //                     where: { 
+    //                         parent_id: category.parent_id,
+    //                         id: { [Op.ne]: categoryId },
+    //                         is_active: true
+    //                     }
+    //                 });
+                    
+    //                 if (siblingCount === 0) {
+    //                     await Category.update(
+    //                         { is_parent: false },
+    //                         { where: { id: category.parent_id } }
+    //                     );
+    //                 }
+    //             }
+    //         }
+            
+    //         const updatePayload = {
+    //             name: name ? name.trim() : category.name,
+    //             slug: finalSlug,
+    //             description: description !== undefined ? (description ? description.trim() : null) : category.description,
+    //             image_url: image_url !== undefined ? image_url : category.image_url,
+    //             parent_id: parent_id !== undefined ? parent_id : category.parent_id,
+    //             level,
+    //             meta_title: meta_title !== undefined ? (meta_title ? meta_title.trim() : null) : category.meta_title,
+    //             sort_order: sort_order !== undefined ? sort_order : category.sort_order,
+    //             updated_at: new Date()
+    //         };
+            
+    //         await Category.update(updatePayload, { where: { id: categoryId } });
+            
+    //         logger.info(`Category updated successfully: ${categoryId}`);
+    //         return await Category.findByPk(categoryId);
+    //     } catch (error) {
+    //         logger.error('Error updating category:', error);
+            
+    //         // Handle Sequelize unique constraint errors
+    //         if (error.name === 'SequelizeUniqueConstraintError') {
+    //             throw {
+    //                 status: 'error',
+    //                 statusCode: 400,
+    //                 message: 'A category with this name already exists. Please choose a different name.',
+    //                 details: ['Category names must be unique across the system.']
+    //             };
+    //         }
+            
+    //         // Handle other Sequelize validation errors
+    //         if (error.name === 'SequelizeValidationError') {
+    //             const validationErrors = error.errors.map(err => err.message);
+    //             throw {
+    //                 status: 'error',
+    //                 statusCode: 400,
+    //                 message: 'Validation failed',
+    //                 details: validationErrors
+    //             };
+    //         }
+            
+    //         throw error;
+    //     }
+    // }
+
+    /**
+ * Edit an existing category
+ * @param {string} categoryId - Category ID to update
+ * @param {Object} updateData - Updated category data
+ * @returns {Promise<Object>} Updated category
+ */
+async editCategory(categoryId, updateData) {
+    try {
+        // Validate category ID
+        const idValidation = this.validateCategoryId(categoryId);
+        if (!idValidation.isValid) {
+            throw {
+                status: 'error',
+                statusCode: 400,
+                message: idValidation.error
+            };
+        }
+
+        // Validate update data with database checks, excluding current category
+        const validation = await this.validateCategoryData(updateData, true, categoryId);
+        if (!validation.isValid) {
+            throw {
+                status: 'error',
+                statusCode: 400,
+                message: 'Validation failed',
+                details: validation.errors
+            };
+        }
+
+        const category = await Category.findByPk(categoryId);
+        if (!category) {
+            throw {
+                status: 'error',
+                statusCode: 404,
+                message: 'Category not found in our records.'
+            }
+        }
+        
+        const { name, description, image_url, parent_id, meta_title, sort_order, slug } = updateData;
+
+        // REMOVED DUPLICATE NAME CHECK - already handled in validateCategoryData
+        
+        let level = category.level;
+        let finalSlug = category.slug;
+
+        // Generate new slug if name changed and no manual slug provided
+        if (name && name.trim() !== category.name && !slug) {
+            finalSlug = await this.generateUniqueSlug(name, categoryId);
+        } else if (slug && slug !== category.slug) {
+            // Validate the provided slug
+            const slugValidation = this.validateSlug(slug);
+            if (!slugValidation.isValid) {
                 throw {
                     status: 'error',
                     statusCode: 400,
-                    message: idValidation.error
+                    message: slugValidation.error
                 };
-            }
-
-            // Validate update data with database checks, excluding current category
-            const validation = await this.validateCategoryData(updateData, true, categoryId);
-            if (!validation.isValid) {
-                throw {
-                    status: 'error',
-                    statusCode: 400,
-                    message: 'Validation failed',
-                    details: validation.errors
-                };
-            }
-
-            const category = await Category.findByPk(categoryId);
-            if (!category) {
-                throw {
-                    status: 'error',
-                    statusCode: 404,
-                    message: 'Category not found in our records.'
-                }
             }
             
-            const { name, description, image_url, parent_id, meta_title, sort_order } = updateData;
-
-            const existingCategory = await Category.findOne({
-                where: { name: name.trim() }
+            // Check if slug is unique
+            const existingSlugCategory = await Category.findOne({
+                where: { 
+                    slug: slug,
+                    id: { [Op.ne]: categoryId }
+                }
             });
-
-            if(existingCategory) {
+            
+            if (existingSlugCategory) {
                 throw {
                     status: 'error',
                     statusCode: 400,
-                    message: `Category with name '${name.trim()}' already exists. Please choose a different name.`,
-                }
+                    message: 'A category with this slug already exists. Please choose a different slug.'
+                };
             }
-
-            if (name && name.trim() !== category.name) {
-                const existingCategory = await Category.findOne({
-                    where: { 
-                        name: name.trim(),
-                        id: { [Op.ne]: categoryId }
+            
+            finalSlug = slug;
+        }
+        
+        // Process parent_id change
+        let processedParentId = category.parent_id;
+        
+        if (parent_id !== undefined) {
+            // Handle null, empty string, or "null" string as no parent
+            if (parent_id === null || parent_id === '' || parent_id === 'null' || parent_id === 'undefined') {
+                processedParentId = null;
+                level = 0;
+            } else {
+                // Validate parent exists
+                const parentCategory = await Category.findByPk(parent_id);
+                if (!parentCategory) {
+                    throw {
+                        status: 'error',
+                        statusCode: 404,
+                        message: 'New parent category not found in our records.'
                     }
-                });
-
-                if(existingCategory) {
+                }
+                
+                // Check for circular reference
+                if (parent_id === categoryId) {
                     throw {
                         status: 'error',
                         statusCode: 400,
-                        message: `Category with name '${name.trim()}' already exists. Please choose a different name.`,
-                    }
-                }
-            }
-            
-            let level = category.level;
-            let finalSlug = category.slug;
-
-            // Generate new slug if name changed and no manual slug provided
-            if (name && name.trim() !== category.name && !slug) {
-                finalSlug = await this.generateUniqueSlug(name, categoryId);
-            } else if (slug && slug !== category.slug) {
-                finalSlug = slug;
-            }
-            
-            // If parent_id is being changed
-            if (parent_id !== undefined && parent_id !== category.parent_id) {
-                if (parent_id) {
-                    const parentCategory = await Category.findByPk(parent_id);
-                    if (!parentCategory) {
-                        throw {
-                            status: 'error',
-                            statusCode: 404,
-                            message: 'New parent category not found in our records.'
-                        }
-                    }
-                    level = parentCategory.level + 1;
-                    
-                    // Update new parent to be marked as parent
-                    await Category.update(
-                        { is_parent: true },
-                        { where: { id: parent_id } }
-                    );
-                } else {
-                    level = 0;
+                        message: 'A category cannot be its own parent.'
+                    };
                 }
                 
-                // Check if old parent still has children
-                if (category.parent_id) {
-                    const siblingCount = await Category.count({
-                        where: { 
-                            parent_id: category.parent_id,
-                            id: { [Op.ne]: categoryId },
-                            is_active: true
-                        }
-                    });
-                    
-                    if (siblingCount === 0) {
-                        await Category.update(
-                            { is_parent: false },
-                            { where: { id: category.parent_id } }
-                        );
+                // Check if setting this parent would create a circular reference
+                let checkParent = parentCategory;
+                while (checkParent.parent_id) {
+                    if (checkParent.parent_id === categoryId) {
+                        throw {
+                            status: 'error',
+                            statusCode: 400,
+                            message: 'This would create a circular reference in the category hierarchy.'
+                        };
                     }
+                    checkParent = await Category.findByPk(checkParent.parent_id);
+                    if (!checkParent) break;
+                }
+                
+                processedParentId = parent_id;
+                level = parentCategory.level + 1;
+                
+                // Update new parent to be marked as parent
+                await Category.update(
+                    { is_parent: true },
+                    { where: { id: parent_id } }
+                );
+            }
+            
+            // Check if old parent still has children
+            if (category.parent_id && category.parent_id !== processedParentId) {
+                const siblingCount = await Category.count({
+                    where: { 
+                        parent_id: category.parent_id,
+                        id: { [Op.ne]: categoryId },
+                        is_active: true
+                    }
+                });
+                
+                if (siblingCount === 0) {
+                    await Category.update(
+                        { is_parent: false },
+                        { where: { id: category.parent_id } }
+                    );
                 }
             }
-            
-            const updatePayload = {
-                name: name ? name.trim() : category.name,
-                slug: finalSlug,
-                description: description !== undefined ? (description ? description.trim() : null) : category.description,
-                image_url: image_url !== undefined ? image_url : category.image_url,
-                parent_id: parent_id !== undefined ? parent_id : category.parent_id,
-                level,
-                meta_title: meta_title !== undefined ? (meta_title ? meta_title.trim() : null) : category.meta_title,
-                sort_order: sort_order !== undefined ? sort_order : category.sort_order,
-                updated_at: new Date()
-            };
-            
-            await Category.update(updatePayload, { where: { id: categoryId } });
-            
-            logger.info(`Category updated successfully: ${categoryId}`);
-            return await Category.findByPk(categoryId);
-        } catch (error) {
-            logger.error('Error updating category:', error);
-            
-            // Handle Sequelize unique constraint errors
-            if (error.name === 'SequelizeUniqueConstraintError') {
-                throw {
-                    status: 'error',
-                    statusCode: 400,
-                    message: 'A category with this name already exists. Please choose a different name.',
-                    details: ['Category names must be unique across the system.']
-                };
-            }
-            
-            // Handle other Sequelize validation errors
-            if (error.name === 'SequelizeValidationError') {
-                const validationErrors = error.errors.map(err => err.message);
-                throw {
-                    status: 'error',
-                    statusCode: 400,
-                    message: 'Validation failed',
-                    details: validationErrors
-                };
-            }
-            
-            throw error;
         }
+        
+        const updatePayload = {
+            name: name ? name.trim() : category.name,
+            slug: finalSlug,
+            description: description !== undefined ? (description ? description.trim() : null) : category.description,
+            image_url: image_url !== undefined ? image_url : category.image_url,
+            parent_id: processedParentId,
+            level,
+            meta_title: meta_title !== undefined ? (meta_title ? meta_title.trim() : null) : category.meta_title,
+            sort_order: sort_order !== undefined ? parseInt(sort_order) || 0 : category.sort_order,
+            updated_at: new Date()
+        };
+        
+        await Category.update(updatePayload, { where: { id: categoryId } });
+        
+        logger.info(`Category updated successfully: ${categoryId}`);
+        return await Category.findByPk(categoryId);
+    } catch (error) {
+        logger.error('Error updating category:', error);
+        
+        // Handle Sequelize unique constraint errors
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            throw {
+                status: 'error',
+                statusCode: 400,
+                message: 'A category with this name or slug already exists. Please choose different values.',
+                details: ['Category names and slugs must be unique across the system.']
+            };
+        }
+        
+        // Handle other Sequelize validation errors
+        if (error.name === 'SequelizeValidationError') {
+            const validationErrors = error.errors.map(err => err.message);
+            throw {
+                status: 'error',
+                statusCode: 400,
+                message: 'Validation failed',
+                details: validationErrors
+            };
+        }
+        
+        throw error;
     }
+}
 
      /**
      * Get category by slug with all children

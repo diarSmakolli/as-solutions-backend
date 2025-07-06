@@ -440,12 +440,23 @@ class AdministrationService {
       //   maxAge: CONSTANTS.SESSION_EXPIRY,
       // });
 
-      res.cookie("accessToken", accessToken, {
+      const cookieOptions = {
         httpOnly: true,
-        secure: true, // true in production
+        secure: true,
         sameSite: "none",
         maxAge: CONSTANTS.SESSION_EXPIRY,
-      });
+        path: "/",
+      };
+
+      // res.cookie("accessToken", accessToken, {
+      //   httpOnly: true,
+      //   secure: true, // true in production
+      //   sameSite: "none",
+      //   maxAge: CONSTANTS.SESSION_EXPIRY,
+      //   path: "/"
+      // });
+
+      res.cookie("accessToken", accessToken, cookieOptions);
 
       const tokenHash = crypto
         .createHash("sha256")
@@ -508,8 +519,9 @@ class AdministrationService {
 
         res.clearCookie("accessToken", {
           httpOnly: true,
-          secure: true,
-          sameSite: "none",
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          path: "/",
         });
       }
 

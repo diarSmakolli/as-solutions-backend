@@ -73,24 +73,71 @@ dotenv.config();
 // app.options('*', cors(corsOptions));
 
 // Simple and safe CORS configuration
+// const corsOptions = {
+//   origin: ['https://as-frontend-snowy.vercel.app', 'http://localhost:3000'],
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+//   exposedHeaders: ['Set-Cookie']
+// };
+
+// app.use(cors(corsOptions));
+
+// app.use(cookieParser());
+
+// app.use(bodyParser.json());
+// app.use(
+//   bodyParser.urlencoded({
+//     extended: true,
+//   })
+// );
+// app.use(express.json());
+
+// Enhanced CORS configuration
 const corsOptions = {
-  origin: ['https://as-frontend-snowy.vercel.app', 'http://localhost:3000'],
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://as-frontend-snowy.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:3001'
+    ];
+    
+    // Allow requests with no origin (mobile apps, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    logger.warn(`CORS: Rejected origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-  exposedHeaders: ['Set-Cookie']
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'Cookie',
+    'Set-Cookie',
+    'X-Requested-With',
+    'Accept',
+    'Origin'
+  ],
+  exposedHeaders: ['Set-Cookie'],
+  optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
 
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
+// Cookie parser BEFORE routes
 app.use(cookieParser());
 
+// Body parsers
 app.use(bodyParser.json());
-app.use(
-  bodyParser.urlencoded({
-    extended: true,
-  })
-);
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
 // API definitions

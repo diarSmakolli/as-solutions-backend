@@ -60,18 +60,18 @@ dotenv.config();
 
 // corsOptions
 app.use(cors({
-  origin: "https://as-frontend-snowy.vercel.app/",
+  origin: "https://as-frontend-snowy.vercel.app",
   credentials: true,
 }));
 
 app.options('*', cors({
-    origin: 'https://as-frontend-snowy.vercel.app/',
+    origin: 'https://as-frontend-snowy.vercel.app',
     credentials: true,
 }));
 
 
 app.use(function (req, res, next) {
-    res.header('Access-Control-Allow-Origin', 'https://as-frontend-snowy.vercel.app/');
+    res.header('Access-Control-Allow-Origin', 'https://as-frontend-snowy.vercel.app');
     res.header("Access-Control-Allow-Headers", "*");
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
@@ -86,24 +86,6 @@ app.use(
   })
 );
 app.use(express.json());
-
-// Security Middleware
-app.use((req, res, next) => {
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("X-XSS-Protection", "1; mode=block");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-
-  // Log requests in development
-  if (process.env.NODE_ENV === "development") {
-    logger.info(
-      `${req.method} ${req.path} - Origin: ${req.get("origin") || "No origin"}`
-    );
-  }
-
-  next();
-});
-
 
 // API definitions
 app.use("/api/administrations", administrationRoute);

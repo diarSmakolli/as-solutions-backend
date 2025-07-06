@@ -59,24 +59,31 @@ dotenv.config();
 
 
 // corsOptions
+// app.use(cors({
+//   origin: "https://as-frontend-snowy.vercel.app",
+//   credentials: true,
+// }));
+
+// app.options('*', cors({
+//     origin: 'https://as-frontend-snowy.vercel.app',
+//     credentials: true,
+// }));
+
+
+// app.use(function (req, res, next) {
+//     res.header('Access-Control-Allow-Origin', 'https://as-frontend-snowy.vercel.app');
+//     res.header("Access-Control-Allow-Headers", "*");
+//     res.header('Access-Control-Allow-Credentials', 'true');
+//     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+//     next();
+// }); 
+
 app.use(cors({
-  origin: "https://as-frontend-snowy.vercel.app",
+  origin: 'https://as-frontend-snowy.vercel.app',
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
-
-app.options('*', cors({
-    origin: 'https://as-frontend-snowy.vercel.app',
-    credentials: true,
-}));
-
-
-app.use(function (req, res, next) {
-    res.header('Access-Control-Allow-Origin', 'https://as-frontend-snowy.vercel.app');
-    res.header("Access-Control-Allow-Headers", "*");
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    next();
-}); 
 
 app.use(cookieParser());
 app.use(bodyParser.json());

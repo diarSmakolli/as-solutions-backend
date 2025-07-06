@@ -27,54 +27,64 @@ dotenv.config();
 //   })
 // );
 
-// Enhanced CORS Configuration
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     // Allow requests with no origin (mobile apps, Postman, etc.)
+//     if (!origin) return callback(null, true);
+    
+//     const allowedOrigins = [
+//       'https://as-frontend-snowy.vercel.app',
+//       'http://localhost:3000',
+//       'http://localhost:3001',
+//       'http://127.0.0.1:3000'
+//     ];
+    
+//     if (allowedOrigins.includes(origin)) {
+//       return callback(null, true);
+//     }
+    
+//     // Log rejected origin for debugging
+//     logger.warn(`CORS: Rejected origin: ${origin}`);
+//     return callback(new Error('Not allowed by CORS'));
+//   },
+//   credentials: true, // CRITICAL: Enable credentials
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: [
+//     'Origin',
+//     'X-Requested-With', 
+//     'Content-Type',
+//     'Accept',
+//     'Authorization',
+//     'Cache-Control',
+//     'Cookie',
+//     'Set-Cookie'
+//   ],
+//   exposedHeaders: [
+//     'Set-Cookie',
+//     'Authorization'
+//   ],
+//   optionsSuccessStatus: 200,
+//   maxAge: 86400
+// };
+
+// app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+// app.options('*', cors(corsOptions));
+
+// Simple and safe CORS configuration
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      'https://as-frontend-snowy.vercel.app',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3000'
-    ];
-    
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Log rejected origin for debugging
-    logger.warn(`CORS: Rejected origin: ${origin}`);
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true, // CRITICAL: Enable credentials
+  origin: ['https://as-frontend-snowy.vercel.app', 'http://localhost:3000'],
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: [
-    'Origin',
-    'X-Requested-With', 
-    'Content-Type',
-    'Accept',
-    'Authorization',
-    'Cache-Control',
-    'Cookie',
-    'Set-Cookie'
-  ],
-  exposedHeaders: [
-    'Set-Cookie',
-    'Authorization'
-  ],
-  optionsSuccessStatus: 200,
-  maxAge: 86400
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  exposedHeaders: ['Set-Cookie']
 };
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests explicitly
-app.options('*', cors(corsOptions));
-
-
 app.use(cookieParser());
+
 app.use(bodyParser.json());
 app.use(
   bodyParser.urlencoded({

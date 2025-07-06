@@ -755,10 +755,134 @@ class CategoryService {
    * @param {string} slug - Category slug
    * @returns {Promise<Object>} Category with hierarchical children
    */
+  //   async getCategoryBySlug(slug) {
+  //     try {
+  //       // Validate slug
+  //       const slugValidation = this.validateCategorySlug(slug);
+  //       if (!slugValidation.isValid) {
+  //         throw {
+  //           status: "error",
+  //           statusCode: 400,
+  //           message: slugValidation.error,
+  //         };
+  //       }
+
+  //       const category = await Category.findOne({
+  //         where: {
+  //           slug: slug.trim(),
+  //           is_active: true,
+  //         },
+  //       });
+
+  //       if (!category) {
+  //         throw {
+  //           status: "error",
+  //           statusCode: 404,
+  //           message: "Category not found with the provided slug.",
+  //         };
+  //       }
+
+  //       // Get all parents (breadcrumb)
+  //       const parents = [];
+  //       let currentCategory = category;
+
+  //       while (currentCategory.parent_id) {
+  //         const parent = await Category.findOne({
+  //           where: {
+  //             id: currentCategory.parent_id,
+  //             is_active: true,
+  //           },
+  //         });
+  //         if (parent) {
+  //           parents.unshift(parent);
+  //           currentCategory = parent;
+  //         } else {
+  //           break;
+  //         }
+  //       }
+
+  //       // Get all descendants recursively
+  //       const getAllDescendants = async (parentId) => {
+  //         const directChildren = await Category.findAll({
+  //           where: {
+  //             parent_id: parentId,
+  //             is_active: true,
+  //           },
+  //           order: [
+  //             ["sort_order", "ASC"],
+  //             ["name", "ASC"],
+  //           ],
+  //         });
+
+  //         const descendants = [];
+  //         for (const child of directChildren) {
+  //           const childDescendants = await getAllDescendants(child.id);
+  //           descendants.push({
+  //             ...child.toJSON(),
+  //             children: childDescendants,
+  //           });
+  //         }
+
+  //         return descendants;
+  //       };
+
+  //       const children = await getAllDescendants(category.id);
+
+  //       // Get direct children for quick access
+  //       const directChildren = await Category.findAll({
+  //         where: {
+  //           parent_id: category.id,
+  //           is_active: true,
+  //         },
+  //         order: [
+  //           ["sort_order", "ASC"],
+  //           ["name", "ASC"],
+  //         ],
+  //       });
+
+  //       // Get sibling categories (same parent)
+  //       let siblings = [];
+  //       if (category.parent_id) {
+  //         siblings = await Category.findAll({
+  //           where: {
+  //             parent_id: category.parent_id,
+  //             is_active: true,
+  //             id: { [Op.ne]: category.id },
+  //           },
+  //           order: [
+  //             ["sort_order", "ASC"],
+  //             ["name", "ASC"],
+  //           ],
+  //         });
+  //       }
+
+  //       return {
+  //         category: category.toJSON(),
+  //         parents,
+  //         children, // All descendants with nested structure
+  //         direct_children: directChildren, // Only direct children
+  //         siblings,
+  //         breadcrumb: [...parents, category],
+  //         meta: {
+  //           total_children: children.length,
+  //           total_direct_children: directChildren.length,
+  //           level: category.level,
+  //           has_children: directChildren.length > 0,
+  //           has_siblings: siblings.length > 0,
+  //         },
+  //       };
+  //     } catch (error) {
+  //       logger.error("Error fetching category by slug:", error);
+  //       throw error;
+  //     }
+  //   }
+
+  // Get all categories with hierarchical structure
+  // v2.0
   async getCategoryBySlug(slug) {
     try {
-      // Validate slug
-      const slugValidation = this.validateCategorySlug(slug);
+      // FIXED: Use validateSlug instead of validateCategorySlug
+      const slugValidation = this.validateSlug(slug);
       if (!slugValidation.isValid) {
         throw {
           status: "error",
@@ -858,11 +982,11 @@ class CategoryService {
 
       return {
         category: category.toJSON(),
-        parents,
+        parents: parents.map((p) => p.toJSON()),
         children, // All descendants with nested structure
-        direct_children: directChildren, // Only direct children
-        siblings,
-        breadcrumb: [...parents, category],
+        direct_children: directChildren.map((c) => c.toJSON()), // Only direct children
+        siblings: siblings.map((s) => s.toJSON()),
+        breadcrumb: [...parents.map((p) => p.toJSON()), category.toJSON()],
         meta: {
           total_children: children.length,
           total_direct_children: directChildren.length,
@@ -877,7 +1001,6 @@ class CategoryService {
     }
   }
 
-  // Get all categories with hierarchical structure
   async getAllCategories(includeInactive = false) {
     try {
       const whereClause = includeInactive ? {} : { is_active: true };

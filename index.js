@@ -23,6 +23,7 @@ const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
       'https://as-frontend-snowy.vercel.app',
+      'https://assolutionsfournitures.fr'
     ];
     
     // Allow requests with no origin (mobile apps, etc.)

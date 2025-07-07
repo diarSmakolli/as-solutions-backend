@@ -23,8 +23,6 @@ const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
       'https://as-frontend-snowy.vercel.app',
-      'http://localhost:3000',
-      'http://localhost:3001'
     ];
     
     // Allow requests with no origin (mobile apps, etc.)

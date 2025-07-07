@@ -209,6 +209,64 @@ class ProductServiceLayer {
     return timestamp;
   }
 
+  // generate custom details ( key automatically)
+  _processCustomDetails(customDetails = []) {
+    if (!Array.isArray(customDetails)) {
+      return [];
+    }
+
+    return customDetails.map((detail, index) => {
+      // If detail already has a key, keep it
+      if (detail.key && detail.key.trim()) {
+        return {
+          key: detail.key.trim(),
+          label: detail.label || detail.key.trim(),
+          value: detail.value || "",
+        };
+      }
+
+      // Auto-generate key from label or value
+      let autoKey = "";
+
+      // Try to generate from label first
+      if (detail.label && typeof detail.label === "string") {
+        autoKey = detail.label
+          .toLowerCase()
+          .trim()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9\s]/g, "")
+          .replace(/\s+/g, "_")
+          .substring(0, 50);
+      }
+
+      // If no label, try to generate from value
+      if (!autoKey && detail.value && typeof detail.value === "string") {
+        autoKey = detail.value
+          .toLowerCase()
+          .trim()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9\s]/g, "")
+          .replace(/\s+/g, "_")
+          .substring(0, 50);
+      }
+
+      // Fallback to generic key if auto-generation fails
+      if (!autoKey || autoKey.length < 2) {
+        autoKey = `custom_field_${index + 1}`;
+      }
+
+      return {
+        key: autoKey,
+        label:
+          detail.label ||
+          autoKey.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
+        value: detail.value || "",
+      };
+    });
+  }
+
   // ************************************************************************************************************************
 
   // Services of Product module
@@ -527,7 +585,8 @@ class ProductServiceLayer {
         discount_percentage_gross: productData.discount_percentage_gross || 0,
         final_price_nett: parseFloat(finalPriceNett),
         final_price_gross: parseFloat(finalPriceGross),
-        custom_details: productData.custom_details || [],
+        // custom_details: productData.custom_details || [],
+        custom_details: this._processCustomDetails(productData.custom_details),
         images: uploadedImages,
         main_image_url: mainImageUrl,
         supplier_id: productData.supplier_id,
@@ -634,7 +693,7 @@ class ProductServiceLayer {
     }
   }
 
-  // Edit a existing product - REFACTORED
+  // edit product method.
   async editProduct(productId, productData, customOptions) {
     try {
       this._validateRequiredField(productId, "Product ID");
@@ -913,6 +972,10 @@ class ProductServiceLayer {
         final_price_nett: parseFloat(finalPriceNett),
         final_price_gross: parseFloat(finalPriceGross),
         is_discounted: isDiscounted,
+        custom_details:
+          productData.custom_details !== undefined
+            ? this._processCustomDetails(productData.custom_details)
+            : existingProduct.custom_details,
         images: updatedImages,
         main_image_url: mainImageUrl,
         updated_at: new Date(),
@@ -1042,7 +1105,7 @@ class ProductServiceLayer {
       throw err;
     }
   }
-  
+
   // Create a product service
   async _createProductService(productId, serviceData) {
     this.logger.info(`Creating service: ${JSON.stringify(serviceData)}`);
@@ -1692,147 +1755,196 @@ class ProductServiceLayer {
 
   // update custom options v2.0 ( fixed image_url not null) - REFACTORED
   async updateCustomOptions(productId, customOptions = []) {
-  try {
-    this.logger.info(`Updating custom options for product ${productId} while preserving images`);
+    try {
+      this.logger.info(
+        `Updating custom options for product ${productId} while preserving images`
+      );
 
-    // First, get existing custom options with their values and image URLs
-    const existingOptions = await ProductCustomOption.findAll({
-      where: { product_id: productId },
-      include: [{
-        model: ProductCustomOptionValue,
-        as: "option_values",
-        attributes: ['id', 'option_value', 'image_url', 'display_name', 'price_modifier', 'sort_order', 'is_default', 'is_active']
-      }]
-    });
+      // First, get existing custom options with their values and image URLs
+      const existingOptions = await ProductCustomOption.findAll({
+        where: { product_id: productId },
+        include: [
+          {
+            model: ProductCustomOptionValue,
+            as: "option_values",
+            attributes: [
+              "id",
+              "option_value",
+              "image_url",
+              "display_name",
+              "price_modifier",
+              "sort_order",
+              "is_default",
+              "is_active",
+            ],
+          },
+        ],
+      });
 
-    // Create a map of existing image URLs by option_value for quick lookup
-    const existingImageMap = new Map();
-    existingOptions.forEach(option => {
-      if (option.option_values) {
-        option.option_values.forEach(value => {
-          if (value.image_url) {
-            // Create multiple keys for flexible matching
-            const keys = [
-              `${option.option_name}_${value.option_value}`,
-              `${option.option_name}_${value.display_name}`,
-              value.option_value,
-              value.display_name
-            ].filter(Boolean);
-            
-            keys.forEach(key => {
-              existingImageMap.set(key.toLowerCase(), value.image_url);
-            });
-          }
-        });
-      }
-    });
+      // Create a map of existing image URLs by option_value for quick lookup
+      const existingImageMap = new Map();
+      existingOptions.forEach((option) => {
+        if (option.option_values) {
+          option.option_values.forEach((value) => {
+            if (value.image_url) {
+              // Create multiple keys for flexible matching
+              const keys = [
+                `${option.option_name}_${value.option_value}`,
+                `${option.option_name}_${value.display_name}`,
+                value.option_value,
+                value.display_name,
+              ].filter(Boolean);
 
-    this.logger.info(`Found ${existingImageMap.size} existing images to preserve`);
+              keys.forEach((key) => {
+                existingImageMap.set(key.toLowerCase(), value.image_url);
+              });
+            }
+          });
+        }
+      });
 
-    // Remove existing custom options (cascade will handle option values)
-    await ProductCustomOption.destroy({
-      where: { product_id: productId },
-    });
+      this.logger.info(
+        `Found ${existingImageMap.size} existing images to preserve`
+      );
 
-    this.logger.info(`Removed existing custom options for product ${productId}`);
+      // Remove existing custom options (cascade will handle option values)
+      await ProductCustomOption.destroy({
+        where: { product_id: productId },
+      });
 
-    // Create new custom options with preserved image URLs
-    const createdOptions = [];
-    
-    if (customOptions && customOptions.length > 0) {
-      for (const optionData of customOptions) {
-        const { option_values, id, ...optionFields } = optionData;
+      this.logger.info(
+        `Removed existing custom options for product ${productId}`
+      );
 
-        this.logger.info(`Creating custom option: ${JSON.stringify(optionFields)}`);
+      // Create new custom options with preserved image URLs
+      const createdOptions = [];
 
-        // Create the custom option
-        const customOption = await ProductCustomOption.create({
-          ...optionFields,
-          product_id: productId,
-          created_at: new Date(),
-          updated_at: new Date(),
-        });
+      if (customOptions && customOptions.length > 0) {
+        for (const optionData of customOptions) {
+          const { option_values, id, ...optionFields } = optionData;
 
-        this.logger.info(`Created custom option with ID: ${customOption.id}`);
+          this.logger.info(
+            `Creating custom option: ${JSON.stringify(optionFields)}`
+          );
 
-        // Create option values with preserved image URLs
-        if (option_values && Array.isArray(option_values) && option_values.length > 0) {
-          for (const valueData of option_values) {
-            // Remove frontend-specific fields
-            const { image, image_preview, ...cleanValueData } = valueData;
+          // Create the custom option
+          const customOption = await ProductCustomOption.create({
+            ...optionFields,
+            product_id: productId,
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
 
-            // Try to preserve existing image_url
-            let preservedImageUrl = cleanValueData.image_url; // Use provided image_url if exists
+          this.logger.info(`Created custom option with ID: ${customOption.id}`);
 
-            // If no image_url provided or it's null/empty, try to find it from existing data
-            if (!preservedImageUrl || preservedImageUrl === null || preservedImageUrl === '') {
-              const lookupKeys = [
-                `${optionFields.option_name}_${cleanValueData.option_value}`,
-                `${optionFields.option_name}_${cleanValueData.display_name}`,
-                cleanValueData.option_value,
-                cleanValueData.display_name
-              ].filter(Boolean).map(key => key.toLowerCase());
+          // Create option values with preserved image URLs
+          if (
+            option_values &&
+            Array.isArray(option_values) &&
+            option_values.length > 0
+          ) {
+            for (const valueData of option_values) {
+              // Remove frontend-specific fields
+              const { image, image_preview, ...cleanValueData } = valueData;
 
-              for (const key of lookupKeys) {
-                if (existingImageMap.has(key)) {
-                  preservedImageUrl = existingImageMap.get(key);
-                  this.logger.info(`Preserved image URL for ${key}: ${preservedImageUrl}`);
-                  break;
+              // Try to preserve existing image_url
+              let preservedImageUrl = cleanValueData.image_url; // Use provided image_url if exists
+
+              // If no image_url provided or it's null/empty, try to find it from existing data
+              if (
+                !preservedImageUrl ||
+                preservedImageUrl === null ||
+                preservedImageUrl === ""
+              ) {
+                const lookupKeys = [
+                  `${optionFields.option_name}_${cleanValueData.option_value}`,
+                  `${optionFields.option_name}_${cleanValueData.display_name}`,
+                  cleanValueData.option_value,
+                  cleanValueData.display_name,
+                ]
+                  .filter(Boolean)
+                  .map((key) => key.toLowerCase());
+
+                for (const key of lookupKeys) {
+                  if (existingImageMap.has(key)) {
+                    preservedImageUrl = existingImageMap.get(key);
+                    this.logger.info(
+                      `Preserved image URL for ${key}: ${preservedImageUrl}`
+                    );
+                    break;
+                  }
                 }
               }
-            }
 
-            // Handle new image upload if provided
-            if (image && image.buffer && image.originalName) {
-              try {
-                const uploadedImageUrl = await uploadToSpaces(
-                  image.buffer,
-                  image.originalName,
-                  "product-options",
-                  "public-read"
-                );
-                preservedImageUrl = uploadedImageUrl;
-                this.logger.info(`Uploaded new image: ${uploadedImageUrl}`);
-              } catch (uploadError) {
-                this.logger.error(`Error uploading new image: ${uploadError.message}`);
-                // Keep the preserved URL if upload fails
+              // Handle new image upload if provided
+              if (image && image.buffer && image.originalName) {
+                try {
+                  const uploadedImageUrl = await uploadToSpaces(
+                    image.buffer,
+                    image.originalName,
+                    "product-options",
+                    "public-read"
+                  );
+                  preservedImageUrl = uploadedImageUrl;
+                  this.logger.info(`Uploaded new image: ${uploadedImageUrl}`);
+                } catch (uploadError) {
+                  this.logger.error(
+                    `Error uploading new image: ${uploadError.message}`
+                  );
+                  // Keep the preserved URL if upload fails
+                }
               }
+
+              // Create the option value with preserved or new image URL
+              const optionValue = await ProductCustomOptionValue.create({
+                custom_option_id: customOption.id,
+                option_value: cleanValueData.option_value,
+                display_name:
+                  cleanValueData.display_name || cleanValueData.option_value,
+                sort_order: cleanValueData.sort_order || 0,
+                is_default: cleanValueData.is_default || false,
+                is_active:
+                  cleanValueData.is_active !== undefined
+                    ? cleanValueData.is_active
+                    : true,
+                price_modifier:
+                  parseFloat(cleanValueData.price_modifier) || 0.0,
+                price_modifier_type:
+                  cleanValueData.price_modifier_type || "fixed",
+                image_url: preservedImageUrl,
+                image_alt_text:
+                  cleanValueData.image_alt_text || cleanValueData.option_value,
+                stock_quantity: cleanValueData.stock_quantity || null,
+                is_in_stock:
+                  cleanValueData.is_in_stock !== undefined
+                    ? cleanValueData.is_in_stock
+                    : true,
+                additional_data: cleanValueData.additional_data || {},
+                created_at: new Date(),
+                updated_at: new Date(),
+              });
+
+              this.logger.info(
+                `Created option value with image_url: ${
+                  preservedImageUrl || "null"
+                }`
+              );
             }
-
-            // Create the option value with preserved or new image URL
-            const optionValue = await ProductCustomOptionValue.create({
-              custom_option_id: customOption.id,
-              option_value: cleanValueData.option_value,
-              display_name: cleanValueData.display_name || cleanValueData.option_value,
-              sort_order: cleanValueData.sort_order || 0,
-              is_default: cleanValueData.is_default || false,
-              is_active: cleanValueData.is_active !== undefined ? cleanValueData.is_active : true,
-              price_modifier: parseFloat(cleanValueData.price_modifier) || 0.0,
-              price_modifier_type: cleanValueData.price_modifier_type || "fixed",
-              image_url: preservedImageUrl,
-              image_alt_text: cleanValueData.image_alt_text || cleanValueData.option_value,
-              stock_quantity: cleanValueData.stock_quantity || null,
-              is_in_stock: cleanValueData.is_in_stock !== undefined ? cleanValueData.is_in_stock : true,
-              additional_data: cleanValueData.additional_data || {},
-              created_at: new Date(),
-              updated_at: new Date(),
-            });
-
-            this.logger.info(`Created option value with image_url: ${preservedImageUrl || 'null'}`);
           }
+
+          createdOptions.push(customOption);
         }
-
-        createdOptions.push(customOption);
       }
-    }
 
-    this.logger.info(`Successfully updated custom options for product ${productId} with preserved images`);
-    return createdOptions;
-  } catch (error) {
-    this.logger.error(`Error updating custom options: ${error.message}`);
-    throw error;
+      this.logger.info(
+        `Successfully updated custom options for product ${productId} with preserved images`
+      );
+      return createdOptions;
+    } catch (error) {
+      this.logger.error(`Error updating custom options: ${error.message}`);
+      throw error;
+    }
   }
-}
 
   // update a custom option
   async updateCustomOption(optionId, updateData) {
@@ -2592,7 +2704,6 @@ class ProductServiceLayer {
 
   // ============================================================================================================================================================
   // CUSTOMER ROUTES
-
 
   // new arrivals ( need to fixed only for published products on production environment )
   async getTopNewProducts(params = {}) {
@@ -6405,9 +6516,6 @@ class ProductServiceLayer {
       };
     }
   }
-
-
-
 };
 
 module.exports = new ProductServiceLayer();

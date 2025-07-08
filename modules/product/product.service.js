@@ -2868,28 +2868,20 @@ class ProductServiceLayer {
 
         for (const originalService of originalProduct.product_services) {
           try {
-            const serviceSlug = await this._generateSlug(originalService.title);
+            await this._createProductService(newProduct.id, {
+            title: originalService.title,
+            description: originalService.description,
+            full_description: originalService.full_description,
+            price: originalService.price,
+            thumbnail: originalService.thumbnail,
+            is_required: originalService.is_required,
+            is_active: originalService.is_active,
+            standalone: originalService.standalone,
+            service_type: originalService.service_type,
+            company_id: originalService.company_id,
+          });
 
-            await ProductService.create(
-              {
-                title: originalService.title,
-                description: originalService.description,
-                full_description: originalService.full_description,
-                slug: serviceSlug,
-                price: originalService.price,
-                thumbnail: originalService.thumbnail,
-                is_required: originalService.is_required,
-                is_active: originalService.is_active,
-                standalone: originalService.standalone,
-                service_type: originalService.service_type,
-                company_id: originalService.company_id,
-                product_id: newProduct.id,
-                created_at: new Date(),
-                updated_at: new Date(),
-              },
-            );
-
-            duplicatedServicesCount++;
+          duplicatedServicesCount++;
             this.logger.info(
               `Service "${originalService.title}" duplicated successfully`
             );

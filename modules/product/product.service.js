@@ -2184,6 +2184,447 @@ class ProductServiceLayer {
   }
 
   // duplicate product
+  // async duplicateProduct(productId, duplicateData = {}) {
+  //   try {
+  //     this._validateRequiredField(productId, "Product ID");
+
+  //     if (!this._isValidUUID(productId)) {
+  //       throw {
+  //         status: "error",
+  //         statusCode: 400,
+  //         message: "Invalid product ID format.",
+  //       };
+  //     }
+
+  //     // Get the original product with all its relations
+  //     const originalProduct = await Product.findByPk(productId, {
+  //       include: [
+  //         {
+  //           model: ProductService,
+  //           as: "product_services",
+  //           include: [
+  //             {
+  //               model: Company,
+  //               as: "company",
+  //             },
+  //           ],
+  //         },
+  //         {
+  //           model: Category,
+  //           as: "categories",
+  //           through: {
+  //             model: ProductCategory,
+  //             as: "product_category_info",
+  //           },
+  //         },
+  //         {
+  //           model: ProductCustomOption,
+  //           as: "custom_options",
+  //           include: [
+  //             {
+  //               model: ProductCustomOptionValue,
+  //               as: "option_values",
+  //               order: [["sort_order", "ASC"]],
+  //             },
+  //           ],
+  //           order: [["sort_order", "ASC"]],
+  //         },
+  //         {
+  //           model: Tax,
+  //           as: "tax",
+  //         },
+  //         {
+  //           model: Company,
+  //           as: "company",
+  //         },
+  //         {
+  //           model: Company,
+  //           as: "supplier",
+  //         },
+  //       ],
+  //     });
+
+  //     if (!originalProduct) {
+  //       throw {
+  //         status: "error",
+  //         statusCode: 404,
+  //         message: "Original product not found in our records.",
+  //       };
+  //     }
+
+  //     this.logger.info(
+  //       `Starting duplication of product: ${originalProduct.title}`
+  //     );
+
+  //     // Generate new unique identifiers
+  //     const newSKU = await this._generateUniqueSKU();
+  //     const newEAN = await this._generateEAN13();
+  //     const newBarcode = newEAN;
+
+  //     // Create new title with "Copy" prefix or custom title
+  //     const newTitle =
+  //       duplicateData.title || `Copy of ${originalProduct.title}-${newSKU}`;
+
+  //     const newSlug = await this._generateSlug(newTitle);
+
+  //     // Duplicate images - keep original URLs but create new metadata
+  //     let duplicatedImages = [];
+  //     if (originalProduct.images && originalProduct.images.length > 0) {
+  //       duplicatedImages = originalProduct.images.map((img, index) => ({
+  //         id: uuidv4(),
+  //         url: img.url,
+  //         alt_text: img.alt_text,
+  //         order: img.order,
+  //         is_main: index === 0,
+  //         width: img.width,
+  //         height: img.height,
+  //         size_bytes: img.size_bytes,
+  //         file_name: `${newSKU}-${img.file_name}`,
+  //         created_at: new Date(),
+  //       }));
+  //     }
+
+  //     // Calculate pricing with tax
+  //     const tax = originalProduct.tax;
+  //     const taxRate = parseFloat(tax?.rate || 0);
+  //     const taxMultiplier = 1 + taxRate / 100;
+
+  //     const purchasePriceNett = parseFloat(originalProduct.purchase_price_nett);
+  //     const regularPriceNett = parseFloat(originalProduct.regular_price_nett);
+
+  //     const calculatedPurchasePriceGross = parseFloat(
+  //       (purchasePriceNett * taxMultiplier).toFixed(2)
+  //     );
+  //     const calculatedRegularPriceGross = parseFloat(
+  //       (regularPriceNett * taxMultiplier).toFixed(2)
+  //     );
+
+  //     // Handle discount calculation
+  //     let finalPriceNett = regularPriceNett;
+  //     let finalPriceGross = calculatedRegularPriceGross;
+  //     let isDiscounted = false;
+
+  //     const discountPercentage = parseFloat(
+  //       originalProduct.discount_percentage_nett || 0
+  //     );
+  //     if (discountPercentage && discountPercentage > 0) {
+  //       isDiscounted = true;
+  //       finalPriceNett = regularPriceNett * (1 - discountPercentage / 100);
+  //       finalPriceGross = finalPriceNett * taxMultiplier;
+  //     }
+
+  //     const newProductData = {
+  //       sku: newSKU,
+  //       slug: newSlug,
+  //       title: newTitle,
+  //       barcode: newBarcode,
+  //       ean: newEAN,
+
+  //       description: originalProduct.description,
+  //       short_description: originalProduct.short_description,
+
+  //       status: duplicateData.status || "active",
+  //       is_active:
+  //         duplicateData.is_active !== undefined
+  //           ? duplicateData.is_active
+  //           : true,
+  //       is_available_on_stock:
+  //         duplicateData.is_available_on_stock !== undefined
+  //           ? duplicateData.is_available_on_stock
+  //           : originalProduct.is_available_on_stock,
+  //       shipping_free: originalProduct.shipping_free,
+  //       mark_as_top_seller: duplicateData.mark_as_top_seller || false,
+  //       mark_as_new: duplicateData.mark_as_new || false,
+  //       mark_as_featured: duplicateData.mark_as_featured || false,
+  //       is_published:
+  //         duplicateData.is_published !== undefined
+  //           ? duplicateData.is_published
+  //           : false,
+  //       is_digital: originalProduct.is_digital,
+  //       is_physical: originalProduct.is_physical,
+  //       is_on_sale: duplicateData.is_on_sale || false,
+  //       is_delivery_only: originalProduct.is_delivery_only,
+  //       is_special_offer: duplicateData.is_special_offer || false,
+  //       has_services: originalProduct.has_services,
+  //       has_custom_fields: originalProduct.has_custom_fields,
+
+  //       // Physical properties
+  //       weight: originalProduct.weight,
+  //       weight_unit: originalProduct.weight_unit,
+  //       measures_unit: originalProduct.measures_unit,
+  //       unit_type: originalProduct.unit_type,
+  //       width: originalProduct.width,
+  //       height: originalProduct.height,
+  //       length: originalProduct.length,
+  //       thickness: originalProduct.thickness,
+  //       depth: originalProduct.depth,
+  //       lead_time: originalProduct.lead_time,
+
+  //       // Meta fields
+  //       meta_title:
+  //         duplicateData.meta_title ||
+  //         `${originalProduct.meta_title || originalProduct.title} - Copy`,
+  //       meta_description:
+  //         duplicateData.meta_description || originalProduct.meta_description,
+  //       meta_keywords: originalProduct.meta_keywords,
+
+  //       // Pricing - can be overridden
+  //       purchase_price_nett:
+  //         duplicateData.purchase_price_nett || purchasePriceNett,
+  //       purchase_price_gross:
+  //         duplicateData.purchase_price_gross || calculatedPurchasePriceGross,
+  //       regular_price_nett:
+  //         duplicateData.regular_price_nett || regularPriceNett,
+  //       regular_price_gross:
+  //         duplicateData.regular_price_gross || calculatedRegularPriceGross,
+  //       final_price_nett: parseFloat(finalPriceNett),
+  //       final_price_gross: parseFloat(finalPriceGross),
+  //       is_discounted:
+  //         duplicateData.is_discounted !== undefined
+  //           ? duplicateData.is_discounted
+  //           : isDiscounted,
+  //       discount_percentage_nett:
+  //         duplicateData.discount_percentage_nett ||
+  //         originalProduct.discount_percentage_nett ||
+  //         0,
+  //       discount_percentage_gross:
+  //         duplicateData.discount_percentage_gross ||
+  //         originalProduct.discount_percentage_gross ||
+  //         0,
+
+  //       // Custom fields and images
+  //       custom_details: [...(originalProduct.custom_details || [])],
+  //       images: duplicatedImages,
+  //       main_image_url:
+  //         duplicatedImages.length > 0
+  //           ? duplicatedImages[0].url
+  //           : originalProduct.main_image_url,
+
+  //       // Foreign keys
+  //       tax_id: originalProduct.tax_id,
+  //       company_id: originalProduct.company_id,
+  //       supplier_id: originalProduct.supplier_id,
+
+  //       // Timestamps
+  //       created_at: new Date(),
+  //       updated_at: new Date(),
+  //     };
+
+  //     // Create the new product
+  //     const newProduct = await Product.create(newProductData);
+
+  //     this.logger.info(`Duplicated product created with ID: ${newProduct.id}`);
+
+  //     // Duplicate product services
+  //     // let duplicatedServicesCount = 0;
+  //     // if (
+  //     //   originalProduct.product_services &&
+  //     //   originalProduct.product_services.length > 0
+  //     // ) {
+  //     //   this.logger.info(
+  //     //     `Duplicating ${originalProduct.product_services.length} services`
+  //     //   );
+
+  //     //   for (const originalService of originalProduct.product_services) {
+  //     //     try {
+  //     //       const serviceSlug = await this._generateSlug(originalService.title);
+
+  //     //       await ProductService.create(
+  //     //         {
+  //     //           title: originalService.title,
+  //     //           description: originalService.description,
+  //     //           full_description: originalService.full_description,
+  //     //           slug: serviceSlug,
+  //     //           price: originalService.price,
+  //     //           thumbnail: originalService.thumbnail,
+  //     //           is_required: originalService.is_required,
+  //     //           is_active: originalService.is_active,
+  //     //           standalone: originalService.standalone,
+  //     //           service_type: originalService.service_type,
+  //     //           company_id: originalService.company_id,
+  //     //           product_id: newProduct.id,
+  //     //           created_at: new Date(),
+  //     //           updated_at: new Date(),
+  //     //         },
+  //     //       );
+
+  //     //       duplicatedServicesCount++;
+  //     //       this.logger.info(
+  //     //         `Service "${originalService.title}" duplicated successfully`
+  //     //       );
+  //     //     } catch (serviceError) {
+  //     //       this.logger.error(
+  //     //         `Error duplicating service "${originalService.title}": ${serviceError.message}`
+  //     //       );
+  //     //       // Continue with other services even if one fails
+  //     //     }
+  //     //   }
+  //     // }
+
+  //     // Duplicate category assignments
+  //     // let duplicatedCategoriesCount = 0;
+  //     // if (originalProduct.categories && originalProduct.categories.length > 0) {
+  //     //   this.logger.info(
+  //     //     `Duplicating ${originalProduct.categories.length} category assignments`
+  //     //   );
+
+  //     //   for (let i = 0; i < originalProduct.categories.length; i++) {
+  //     //     const originalCategory = originalProduct.categories[i];
+
+  //     //     try {
+  //     //       await ProductCategory.create(
+  //     //         {
+  //     //           product_id: newProduct.id,
+  //     //           category_id: originalCategory.id,
+  //     //           is_primary:
+  //     //             originalCategory.product_category_info?.is_primary || false,
+  //     //           created_at: new Date(),
+  //     //           updated_at: new Date(),
+  //     //         },
+  //     //       );
+
+  //     //       duplicatedCategoriesCount++;
+  //     //       this.logger.info(
+  //     //         `Category "${originalCategory.name}" assigned successfully`
+  //     //       );
+  //     //     } catch (categoryError) {
+  //     //       this.logger.error(
+  //     //         `Error duplicating category "${originalCategory.name}": ${categoryError.message}`
+  //     //       );
+  //     //       // Continue with other categories even if one fails
+  //     //     }
+  //     //   }
+  //     // }
+
+  //     // // Duplicate custom options with their values
+  //     // let duplicatedCustomOptionsCount = 0;
+  //     // if (
+  //     //   originalProduct.custom_options &&
+  //     //   originalProduct.custom_options.length > 0
+  //     // ) {
+  //     //   this.logger.info(
+  //     //     `Duplicating ${originalProduct.custom_options.length} custom options`
+  //     //   );
+
+  //     //   for (const originalOption of originalProduct.custom_options) {
+  //     //     try {
+  //     //       // Create the custom option
+  //     //       const duplicatedOption = await ProductCustomOption.create(
+  //     //         {
+  //     //           product_id: newProduct.id,
+  //     //           option_name: originalOption.option_name,
+  //     //           option_type: originalOption.option_type,
+  //     //           is_required: originalOption.is_required,
+  //     //           sort_order: originalOption.sort_order,
+  //     //           placeholder_text: originalOption.placeholder_text,
+  //     //           help_text: originalOption.help_text,
+  //     //           validation_rules: originalOption.validation_rules,
+  //     //           is_active: originalOption.is_active,
+  //     //           affects_price: originalOption.affects_price,
+  //     //           price_modifier_type: originalOption.price_modifier_type,
+  //     //           base_price_modifier: originalOption.base_price_modifier,
+  //     //           created_at: new Date(),
+  //     //           updated_at: new Date(),
+  //     //         },
+  //     //       );
+
+  //     //       // Duplicate option values if they exist
+  //     //       if (
+  //     //         originalOption.option_values &&
+  //     //         originalOption.option_values.length > 0
+  //     //       ) {
+  //     //         for (const originalValue of originalOption.option_values) {
+  //     //           try {
+  //     //             await ProductCustomOptionValue.create(
+  //     //               {
+  //     //                 custom_option_id: duplicatedOption.id,
+  //     //                 option_value: originalValue.option_value,
+  //     //                 display_name: originalValue.display_name,
+  //     //                 sort_order: originalValue.sort_order,
+  //     //                 is_default: originalValue.is_default,
+  //     //                 is_active: originalValue.is_active,
+  //     //                 price_modifier: originalValue.price_modifier,
+  //     //                 price_modifier_type: originalValue.price_modifier_type,
+  //     //                 image_url: originalValue.image_url, // Keep same image URL
+  //     //                 image_alt_text: originalValue.image_alt_text,
+  //     //                 additional_data: originalValue.additional_data,
+  //     //                 stock_quantity: originalValue.stock_quantity,
+  //     //                 is_in_stock: originalValue.is_in_stock,
+  //     //                 created_at: new Date(),
+  //     //                 updated_at: new Date(),
+  //     //               },
+  //     //             );
+  //     //           } catch (valueError) {
+  //     //             this.logger.error(
+  //     //               `Error duplicating option value "${originalValue.option_value}": ${valueError.message}`
+  //     //             );
+  //     //           }
+  //     //         }
+  //     //       }
+
+  //     //       duplicatedCustomOptionsCount++;
+  //     //       this.logger.info(
+  //     //         `Custom option "${originalOption.option_name}" duplicated successfully`
+  //     //       );
+  //     //     } catch (optionError) {
+  //     //       this.logger.error(
+  //     //         `Error duplicating custom option "${originalOption.option_name}": ${optionError.message}`
+  //     //       );
+  //     //     }
+  //     //   }
+  //     // }
+
+  //     this.logger.info(
+  //       `Product duplication completed successfully. New product ID: ${newProduct.id}`
+  //     );
+
+  //     return {
+  //       status: "success",
+  //       statusCode: 201,
+  //       message: "Product duplicated successfully.",
+  //       // data: {
+  //       //   original_product: {
+  //       //     id: originalProduct.id,
+  //       //     sku: originalProduct.sku,
+  //       //     title: originalProduct.title,
+  //       //   },
+  //       //   duplicated_product: {
+  //       //     id: newProduct.id,
+  //       //     sku: newProduct.sku,
+  //       //     slug: newProduct.slug,
+  //       //     title: newProduct.title,
+  //       //     barcode: newProduct.barcode,
+  //       //     ean: newProduct.ean,
+  //       //     main_image_url: newProduct.main_image_url,
+  //       //     is_active: newProduct.is_active,
+  //       //     is_published: newProduct.is_published,
+  //       //     final_price_nett: newProduct.final_price_nett,
+  //       //     final_price_gross: newProduct.final_price_gross,
+  //       //     created_at: newProduct.created_at,
+  //       //   },
+  //       //   duplication_summary: {
+  //       //     images_duplicated: duplicatedImages.length,
+  //       //     services_duplicated: duplicatedServicesCount,
+  //       //     categories_duplicated: duplicatedCategoriesCount,
+  //       //     custom_options_duplicated: duplicatedCustomOptionsCount,
+  //       //     total_components_duplicated:
+  //       //       duplicatedImages.length +
+  //       //       duplicatedServicesCount +
+  //       //       duplicatedCategoriesCount +
+  //       //       duplicatedCustomOptionsCount,
+  //       //   },
+  //       // },
+  //       data: {
+  //         newProduct: newProduct,
+  //       },
+  //     };
+  //   } catch (err) {
+  //     this.logger.error(`Error duplicating product: ${err.message}`);
+  //     throw err;
+  //   }
+  // }
+
+  // v2.0
   async duplicateProduct(productId, duplicateData = {}) {
     try {
       this._validateRequiredField(productId, "Product ID");
@@ -2416,163 +2857,163 @@ class ProductServiceLayer {
       this.logger.info(`Duplicated product created with ID: ${newProduct.id}`);
 
       // Duplicate product services
-      // let duplicatedServicesCount = 0;
-      // if (
-      //   originalProduct.product_services &&
-      //   originalProduct.product_services.length > 0
-      // ) {
-      //   this.logger.info(
-      //     `Duplicating ${originalProduct.product_services.length} services`
-      //   );
+      let duplicatedServicesCount = 0;
+      if (
+        originalProduct.product_services &&
+        originalProduct.product_services.length > 0
+      ) {
+        this.logger.info(
+          `Duplicating ${originalProduct.product_services.length} services`
+        );
 
-      //   for (const originalService of originalProduct.product_services) {
-      //     try {
-      //       const serviceSlug = await this._generateSlug(originalService.title);
+        for (const originalService of originalProduct.product_services) {
+          try {
+            const serviceSlug = await this._generateSlug(originalService.title);
 
-      //       await ProductService.create(
-      //         {
-      //           title: originalService.title,
-      //           description: originalService.description,
-      //           full_description: originalService.full_description,
-      //           slug: serviceSlug,
-      //           price: originalService.price,
-      //           thumbnail: originalService.thumbnail,
-      //           is_required: originalService.is_required,
-      //           is_active: originalService.is_active,
-      //           standalone: originalService.standalone,
-      //           service_type: originalService.service_type,
-      //           company_id: originalService.company_id,
-      //           product_id: newProduct.id,
-      //           created_at: new Date(),
-      //           updated_at: new Date(),
-      //         },
-      //       );
+            await ProductService.create(
+              {
+                title: originalService.title,
+                description: originalService.description,
+                full_description: originalService.full_description,
+                slug: serviceSlug,
+                price: originalService.price,
+                thumbnail: originalService.thumbnail,
+                is_required: originalService.is_required,
+                is_active: originalService.is_active,
+                standalone: originalService.standalone,
+                service_type: originalService.service_type,
+                company_id: originalService.company_id,
+                product_id: newProduct.id,
+                created_at: new Date(),
+                updated_at: new Date(),
+              },
+            );
 
-      //       duplicatedServicesCount++;
-      //       this.logger.info(
-      //         `Service "${originalService.title}" duplicated successfully`
-      //       );
-      //     } catch (serviceError) {
-      //       this.logger.error(
-      //         `Error duplicating service "${originalService.title}": ${serviceError.message}`
-      //       );
-      //       // Continue with other services even if one fails
-      //     }
-      //   }
-      // }
+            duplicatedServicesCount++;
+            this.logger.info(
+              `Service "${originalService.title}" duplicated successfully`
+            );
+          } catch (serviceError) {
+            this.logger.error(
+              `Error duplicating service "${originalService.title}": ${serviceError.message}`
+            );
+            // Continue with other services even if one fails
+          }
+        }
+      }
 
       // Duplicate category assignments
-      // let duplicatedCategoriesCount = 0;
-      // if (originalProduct.categories && originalProduct.categories.length > 0) {
-      //   this.logger.info(
-      //     `Duplicating ${originalProduct.categories.length} category assignments`
-      //   );
+      let duplicatedCategoriesCount = 0;
+      if (originalProduct.categories && originalProduct.categories.length > 0) {
+        this.logger.info(
+          `Duplicating ${originalProduct.categories.length} category assignments`
+        );
 
-      //   for (let i = 0; i < originalProduct.categories.length; i++) {
-      //     const originalCategory = originalProduct.categories[i];
+        for (let i = 0; i < originalProduct.categories.length; i++) {
+          const originalCategory = originalProduct.categories[i];
 
-      //     try {
-      //       await ProductCategory.create(
-      //         {
-      //           product_id: newProduct.id,
-      //           category_id: originalCategory.id,
-      //           is_primary:
-      //             originalCategory.product_category_info?.is_primary || false,
-      //           created_at: new Date(),
-      //           updated_at: new Date(),
-      //         },
-      //       );
+          try {
+            await ProductCategory.create(
+              {
+                product_id: newProduct.id,
+                category_id: originalCategory.id,
+                is_primary:
+                  originalCategory.product_category_info?.is_primary || false,
+                created_at: new Date(),
+                updated_at: new Date(),
+              },
+            );
 
-      //       duplicatedCategoriesCount++;
-      //       this.logger.info(
-      //         `Category "${originalCategory.name}" assigned successfully`
-      //       );
-      //     } catch (categoryError) {
-      //       this.logger.error(
-      //         `Error duplicating category "${originalCategory.name}": ${categoryError.message}`
-      //       );
-      //       // Continue with other categories even if one fails
-      //     }
-      //   }
-      // }
+            duplicatedCategoriesCount++;
+            this.logger.info(
+              `Category "${originalCategory.name}" assigned successfully`
+            );
+          } catch (categoryError) {
+            this.logger.error(
+              `Error duplicating category "${originalCategory.name}": ${categoryError.message}`
+            );
+            // Continue with other categories even if one fails
+          }
+        }
+      }
 
       // // Duplicate custom options with their values
-      // let duplicatedCustomOptionsCount = 0;
-      // if (
-      //   originalProduct.custom_options &&
-      //   originalProduct.custom_options.length > 0
-      // ) {
-      //   this.logger.info(
-      //     `Duplicating ${originalProduct.custom_options.length} custom options`
-      //   );
+      let duplicatedCustomOptionsCount = 0;
+      if (
+        originalProduct.custom_options &&
+        originalProduct.custom_options.length > 0
+      ) {
+        this.logger.info(
+          `Duplicating ${originalProduct.custom_options.length} custom options`
+        );
 
-      //   for (const originalOption of originalProduct.custom_options) {
-      //     try {
-      //       // Create the custom option
-      //       const duplicatedOption = await ProductCustomOption.create(
-      //         {
-      //           product_id: newProduct.id,
-      //           option_name: originalOption.option_name,
-      //           option_type: originalOption.option_type,
-      //           is_required: originalOption.is_required,
-      //           sort_order: originalOption.sort_order,
-      //           placeholder_text: originalOption.placeholder_text,
-      //           help_text: originalOption.help_text,
-      //           validation_rules: originalOption.validation_rules,
-      //           is_active: originalOption.is_active,
-      //           affects_price: originalOption.affects_price,
-      //           price_modifier_type: originalOption.price_modifier_type,
-      //           base_price_modifier: originalOption.base_price_modifier,
-      //           created_at: new Date(),
-      //           updated_at: new Date(),
-      //         },
-      //       );
+        for (const originalOption of originalProduct.custom_options) {
+          try {
+            // Create the custom option
+            const duplicatedOption = await ProductCustomOption.create(
+              {
+                product_id: newProduct.id,
+                option_name: originalOption.option_name,
+                option_type: originalOption.option_type,
+                is_required: originalOption.is_required,
+                sort_order: originalOption.sort_order,
+                placeholder_text: originalOption.placeholder_text,
+                help_text: originalOption.help_text,
+                validation_rules: originalOption.validation_rules,
+                is_active: originalOption.is_active,
+                affects_price: originalOption.affects_price,
+                price_modifier_type: originalOption.price_modifier_type,
+                base_price_modifier: originalOption.base_price_modifier,
+                created_at: new Date(),
+                updated_at: new Date(),
+              },
+            );
 
       //       // Duplicate option values if they exist
-      //       if (
-      //         originalOption.option_values &&
-      //         originalOption.option_values.length > 0
-      //       ) {
-      //         for (const originalValue of originalOption.option_values) {
-      //           try {
-      //             await ProductCustomOptionValue.create(
-      //               {
-      //                 custom_option_id: duplicatedOption.id,
-      //                 option_value: originalValue.option_value,
-      //                 display_name: originalValue.display_name,
-      //                 sort_order: originalValue.sort_order,
-      //                 is_default: originalValue.is_default,
-      //                 is_active: originalValue.is_active,
-      //                 price_modifier: originalValue.price_modifier,
-      //                 price_modifier_type: originalValue.price_modifier_type,
-      //                 image_url: originalValue.image_url, // Keep same image URL
-      //                 image_alt_text: originalValue.image_alt_text,
-      //                 additional_data: originalValue.additional_data,
-      //                 stock_quantity: originalValue.stock_quantity,
-      //                 is_in_stock: originalValue.is_in_stock,
-      //                 created_at: new Date(),
-      //                 updated_at: new Date(),
-      //               },
-      //             );
-      //           } catch (valueError) {
-      //             this.logger.error(
-      //               `Error duplicating option value "${originalValue.option_value}": ${valueError.message}`
-      //             );
-      //           }
-      //         }
-      //       }
+            if (
+              originalOption.option_values &&
+              originalOption.option_values.length > 0
+            ) {
+              for (const originalValue of originalOption.option_values) {
+                try {
+                  await ProductCustomOptionValue.create(
+                    {
+                      custom_option_id: duplicatedOption.id,
+                      option_value: originalValue.option_value,
+                      display_name: originalValue.display_name,
+                      sort_order: originalValue.sort_order,
+                      is_default: originalValue.is_default,
+                      is_active: originalValue.is_active,
+                      price_modifier: originalValue.price_modifier,
+                      price_modifier_type: originalValue.price_modifier_type,
+                      image_url: originalValue.image_url, // Keep same image URL
+                      image_alt_text: originalValue.image_alt_text,
+                      additional_data: originalValue.additional_data,
+                      stock_quantity: originalValue.stock_quantity,
+                      is_in_stock: originalValue.is_in_stock,
+                      created_at: new Date(),
+                      updated_at: new Date(),
+                    },
+                  );
+                } catch (valueError) {
+                  this.logger.error(
+                    `Error duplicating option value "${originalValue.option_value}": ${valueError.message}`
+                  );
+                }
+              }
+            }
 
-      //       duplicatedCustomOptionsCount++;
-      //       this.logger.info(
-      //         `Custom option "${originalOption.option_name}" duplicated successfully`
-      //       );
-      //     } catch (optionError) {
-      //       this.logger.error(
-      //         `Error duplicating custom option "${originalOption.option_name}": ${optionError.message}`
-      //       );
-      //     }
-      //   }
-      // }
+            duplicatedCustomOptionsCount++;
+            this.logger.info(
+              `Custom option "${originalOption.option_name}" duplicated successfully`
+            );
+          } catch (optionError) {
+            this.logger.error(
+              `Error duplicating custom option "${originalOption.option_name}": ${optionError.message}`
+            );
+          }
+        }
+      }
 
       this.logger.info(
         `Product duplication completed successfully. New product ID: ${newProduct.id}`
@@ -2582,38 +3023,38 @@ class ProductServiceLayer {
         status: "success",
         statusCode: 201,
         message: "Product duplicated successfully.",
-        // data: {
-        //   original_product: {
-        //     id: originalProduct.id,
-        //     sku: originalProduct.sku,
-        //     title: originalProduct.title,
-        //   },
-        //   duplicated_product: {
-        //     id: newProduct.id,
-        //     sku: newProduct.sku,
-        //     slug: newProduct.slug,
-        //     title: newProduct.title,
-        //     barcode: newProduct.barcode,
-        //     ean: newProduct.ean,
-        //     main_image_url: newProduct.main_image_url,
-        //     is_active: newProduct.is_active,
-        //     is_published: newProduct.is_published,
-        //     final_price_nett: newProduct.final_price_nett,
-        //     final_price_gross: newProduct.final_price_gross,
-        //     created_at: newProduct.created_at,
-        //   },
-        //   duplication_summary: {
-        //     images_duplicated: duplicatedImages.length,
-        //     services_duplicated: duplicatedServicesCount,
-        //     categories_duplicated: duplicatedCategoriesCount,
-        //     custom_options_duplicated: duplicatedCustomOptionsCount,
-        //     total_components_duplicated:
-        //       duplicatedImages.length +
-        //       duplicatedServicesCount +
-        //       duplicatedCategoriesCount +
-        //       duplicatedCustomOptionsCount,
-        //   },
-        // },
+        data: {
+          original_product: {
+            id: originalProduct.id,
+            sku: originalProduct.sku,
+            title: originalProduct.title,
+          },
+          duplicated_product: {
+            id: newProduct.id,
+            sku: newProduct.sku,
+            slug: newProduct.slug,
+            title: newProduct.title,
+            barcode: newProduct.barcode,
+            ean: newProduct.ean,
+            main_image_url: newProduct.main_image_url,
+            is_active: newProduct.is_active,
+            is_published: newProduct.is_published,
+            final_price_nett: newProduct.final_price_nett,
+            final_price_gross: newProduct.final_price_gross,
+            created_at: newProduct.created_at,
+          },
+          duplication_summary: {
+            images_duplicated: duplicatedImages.length,
+            services_duplicated: duplicatedServicesCount,
+            categories_duplicated: duplicatedCategoriesCount,
+            custom_options_duplicated: duplicatedCustomOptionsCount,
+            total_components_duplicated:
+              duplicatedImages.length +
+              duplicatedServicesCount +
+              duplicatedCategoriesCount +
+              duplicatedCustomOptionsCount,
+          },
+        },
         data: {
           newProduct: newProduct,
         },
@@ -2622,7 +3063,7 @@ class ProductServiceLayer {
       this.logger.error(`Error duplicating product: ${err.message}`);
       throw err;
     }
-  }
+  };
 
   // unpublish product
   async unpublishProduct(productId) {

@@ -18,7 +18,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
-    files: 10 // Maximum 10 files
+    files: 25 // Maximum 25 files
   },
   fileFilter: (req, file, cb) => {
     // Accept only image files
@@ -119,7 +119,7 @@ router.use((error, req, res, next) => {
       return res.status(400).json({
         status: 'error',
         statusCode: 400,
-        message: 'Too many files. Maximum is 10 files.'
+        message: 'Too many files. Maximum is 25 files.'
       });
     }
   }

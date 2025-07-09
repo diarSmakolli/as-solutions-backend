@@ -695,417 +695,912 @@ class ProductServiceLayer {
 
 
   // edit product method.
+  // async editProduct(productId, productData, customOptions) {
+  //   try {
+  //     this._validateRequiredField(productId, "Product ID");
+
+  //     if (!this._isValidUUID(productId)) {
+  //       throw {
+  //         status: "error",
+  //         statusCode: 400,
+  //         message: "Invalid product ID format.",
+  //       };
+  //     }
+
+  //     // Check if product exists
+  //     const existingProduct = await Product.findByPk(productId);
+
+  //     if (!existingProduct) {
+  //       return {
+  //         status: "error",
+  //         statusCode: 404,
+  //         message: "Product not found in our records.",
+  //       };
+  //     }
+
+  //     // Validate basic fields if provided
+  //     if (productData.title && !productData.title.trim()) {
+  //       throw {
+  //         status: "error",
+  //         statusCode: 400,
+  //         message: "Product title cannot be empty.",
+  //       };
+  //     }
+
+  //     if (productData.weight !== undefined && productData.weight !== null) {
+  //       this._validateNumericField(productData.weight, "Weight", 0);
+  //     }
+
+  //     if (
+  //       productData.purchase_price_nett !== undefined &&
+  //       productData.purchase_price_nett !== null
+  //     ) {
+  //       this._validateNumericField(
+  //         productData.purchase_price_nett,
+  //         "Purchase Price Nett",
+  //         0
+  //       );
+  //     }
+
+  //     if (
+  //       productData.regular_price_nett !== undefined &&
+  //       productData.regular_price_nett !== null
+  //     ) {
+  //       this._validateNumericField(
+  //         productData.regular_price_nett,
+  //         "Regular Price Nett",
+  //         0
+  //       );
+  //     }
+
+  //     // Validate and handle tax if provided
+  //     let tax = null;
+  //     if (productData.tax_id && this._isValidUUID(productData.tax_id)) {
+  //       tax = await Tax.findOne({
+  //         where: {
+  //           id: productData.tax_id,
+  //           is_inactive: false,
+  //         },
+  //       });
+
+  //       if (!tax) {
+  //         throw {
+  //           status: "error",
+  //           statusCode: 404,
+  //           message: "Tax not found in our records or is inactive.",
+  //         };
+  //       }
+  //     }
+
+  //     // Validate company and supplier if provided
+  //     if (productData.company_id && this._isValidUUID(productData.company_id)) {
+  //       const company = await Company.findOne({
+  //         where: {
+  //           id: productData.company_id,
+  //           is_inactive: false,
+  //         },
+  //       });
+
+  //       if (!company) {
+  //         throw {
+  //           status: "error",
+  //           statusCode: 404,
+  //           message: "Company not found in our records or is inactive.",
+  //         };
+  //       }
+  //     }
+
+  //     if (
+  //       productData.supplier_id &&
+  //       this._isValidUUID(productData.supplier_id)
+  //     ) {
+  //       const supplier = await Company.findOne({
+  //         where: {
+  //           id: productData.supplier_id,
+  //           is_inactive: false,
+  //         },
+  //       });
+
+  //       if (!supplier) {
+  //         throw {
+  //           status: "error",
+  //           statusCode: 404,
+  //           message: "Supplier not found or is inactive.",
+  //         };
+  //       }
+  //     }
+
+  //     // Handle unique field validation if they're being updated
+  //     if (
+  //       productData.title ||
+  //       productData.sku ||
+  //       productData.slug ||
+  //       productData.barcode ||
+  //       productData.ean
+  //     ) {
+  //       const whereConditions = [];
+
+  //       if (productData.title)
+  //         whereConditions.push({ title: productData.title });
+  //       if (productData.sku) whereConditions.push({ sku: productData.sku });
+  //       if (productData.slug) whereConditions.push({ slug: productData.slug });
+  //       if (productData.barcode)
+  //         whereConditions.push({ barcode: productData.barcode });
+  //       if (productData.ean) whereConditions.push({ ean: productData.ean });
+
+  //       if (whereConditions.length > 0) {
+  //         const conflictingProduct = await Product.findOne({
+  //           where: {
+  //             [Op.and]: [
+  //               { id: { [Op.ne]: productId } },
+  //               { [Op.or]: whereConditions },
+  //             ],
+  //           },
+  //         });
+
+  //         if (conflictingProduct) {
+  //           throw {
+  //             status: "error",
+  //             statusCode: 400,
+  //             message:
+  //               "Another product with the same title, SKU, slug, barcode, or EAN already exists.",
+  //           };
+  //         }
+  //       }
+  //     }
+
+  //     // Generate slug if title is being updated
+  //     let generatedSlug = null;
+
+  //     if (productData.title && productData.title !== existingProduct.title) {
+  //       generatedSlug = await this._generateSlug(productData.title, productId);
+  //     }
+
+  //     // Handle image updates
+  //     let updatedImages = [...(existingProduct.images || [])];
+  //     let mainImageUrl = existingProduct.main_image_url;
+
+  //     // Process existing images (handle deletions and reordering)
+  //     if (
+  //       productData.existing_images &&
+  //       Array.isArray(productData.existing_images)
+  //     ) {
+  //       updatedImages = productData.existing_images;
+  //       if (updatedImages.length > 0) {
+  //         mainImageUrl = updatedImages[0].url;
+  //       }
+  //     }
+
+  //     // Add new images if provided
+  //     if (
+  //       productData.newImages &&
+  //       Array.isArray(productData.newImages) &&
+  //       productData.newImages.length > 0
+  //     ) {
+  //       for (let i = 0; i < productData.newImages.length; i++) {
+  //         const imageData = productData.newImages[i];
+
+  //         if (imageData.buffer && imageData.originalName) {
+  //           try {
+  //             const imageUrl = await uploadToSpaces(
+  //               imageData.buffer,
+  //               imageData.originalName,
+  //               "products",
+  //               "public-read"
+  //             );
+
+  //             const imageInfo = {
+  //               id: uuidv4(),
+  //               url: imageUrl,
+  //               alt_text: imageData.altText || existingProduct.title,
+  //               order: updatedImages.length + i + 1,
+  //               is_main: updatedImages.length === 0 && i === 0,
+  //               width: imageData.width || null,
+  //               height: imageData.height || null,
+  //               size_bytes: imageData.buffer.length,
+  //               file_name: imageData.originalName,
+  //               created_at: new Date(),
+  //             };
+
+  //             updatedImages.push(imageInfo);
+
+  //             if (updatedImages.length === 1) {
+  //               mainImageUrl = imageUrl;
+  //             }
+  //           } catch (uploadError) {
+  //             this.logger.error(
+  //               `Error uploading image ${i}: ${uploadError.message}`
+  //             );
+  //             throw {
+  //               status: "error",
+  //               statusCode: 500,
+  //               message: `Failed to upload image: ${imageData.originalName}`,
+  //             };
+  //           }
+  //         }
+  //       }
+  //     }
+
+  //     // Calculate prices if relevant fields are being updated
+  //     let calculatedPurchasePriceGross = existingProduct.purchase_price_gross;
+  //     let calculatedRegularPriceGross = existingProduct.regular_price_gross;
+  //     let finalPriceNett = existingProduct.final_price_nett;
+  //     let finalPriceGross = existingProduct.final_price_gross;
+  //     let isDiscounted = existingProduct.is_discounted;
+
+  //     const taxToUse = tax || (await Tax.findByPk(existingProduct.tax_id));
+  //     const taxRate = parseFloat(taxToUse?.rate || 0);
+  //     const taxMultiplier = 1 + taxRate / 100;
+
+  //     if (productData.purchase_price_nett !== undefined) {
+  //       calculatedPurchasePriceGross = parseFloat(
+  //         (productData.purchase_price_nett * taxMultiplier).toFixed(2)
+  //       );
+  //     }
+
+  //     if (productData.regular_price_nett !== undefined) {
+  //       calculatedRegularPriceGross = parseFloat(
+  //         (productData.regular_price_nett * taxMultiplier).toFixed(2)
+  //       );
+  //       finalPriceNett = productData.regular_price_nett;
+  //       finalPriceGross = calculatedRegularPriceGross;
+  //     }
+
+  //     // Handle discount
+  //     const discountPercentage =
+  //       productData.discount_percentage_nett !== undefined
+  //         ? productData.discount_percentage_nett
+  //         : existingProduct.discount_percentage_nett;
+
+  //     if (discountPercentage && discountPercentage > 0) {
+  //       isDiscounted = true;
+  //       const basePrice =
+  //         productData.regular_price_nett !== undefined
+  //           ? productData.regular_price_nett
+  //           : existingProduct.regular_price_nett;
+  //       finalPriceNett = basePrice * (1 - discountPercentage / 100);
+  //       finalPriceGross = finalPriceNett * taxMultiplier;
+  //     } else {
+  //       isDiscounted = false;
+  //     }
+
+  //     // Prepare update data
+  //     const updateData = {
+  //       ...productData,
+  //       slug: generatedSlug || existingProduct.slug,
+  //       purchase_price_gross: calculatedPurchasePriceGross,
+  //       regular_price_gross: calculatedRegularPriceGross,
+  //       final_price_nett: parseFloat(finalPriceNett),
+  //       final_price_gross: parseFloat(finalPriceGross),
+  //       is_discounted: isDiscounted,
+  //       custom_details:
+  //         productData.custom_details !== undefined
+  //           ? this._processCustomDetails(productData.custom_details)
+  //           : existingProduct.custom_details,
+  //       images: updatedImages,
+  //       main_image_url: mainImageUrl,
+  //       updated_at: new Date(),
+  //     };
+
+  //     // Remove fields that shouldn't be directly updated
+  //     delete updateData.newImages;
+  //     delete updateData.existing_images;
+  //     delete updateData.services;
+  //     delete updateData.categories;
+
+  //     // Update the product
+  //     await existingProduct.update(updateData);
+
+  //     // Handle product services
+  //     if (productData.services !== undefined) {
+  //       // Remove existing services
+  //       await ProductService.destroy({
+  //         where: { product_id: productId },
+  //       });
+
+  //       // Add new services
+  //       if (
+  //         Array.isArray(productData.services) &&
+  //         productData.services.length > 0
+  //       ) {
+  //         for (const serviceData of productData.services) {
+  //           try {
+  //             await this._createProductService(productId, serviceData);
+  //           } catch (serviceError) {
+  //             this.logger.error(
+  //               `Error creating service "${serviceData.title}": ${serviceError.message}`
+  //             );
+  //             throw serviceError;
+  //           }
+  //         }
+
+  //         await existingProduct.update({ has_services: true });
+  //       } else {
+  //         await existingProduct.update({ has_services: false });
+  //       }
+  //     }
+
+  //     // Handle categories
+  //     if (productData.categories !== undefined) {
+  //       // Remove existing category associations
+  //       await ProductCategory.destroy({
+  //         where: { product_id: productId },
+  //       });
+
+  //       // Add new category associations
+  //       if (
+  //         Array.isArray(productData.categories) &&
+  //         productData.categories.length > 0
+  //       ) {
+  //         await this._assignCategoriesToProduct(
+  //           productId,
+  //           productData.categories
+  //         );
+  //       }
+  //     }
+
+  //     // Handle custom options update - THIS IS CRUCIAL
+  //     // if (customOptions !== undefined) {
+  //     //   this.logger.info(`Updating custom options for product ${productId}`);
+  //     //   await this.updateCustomOptions(productId, customOptions);
+  //     // }
+
+  //     if (customOptions !== undefined) {
+  //       this.logger.info(`Updating custom options for product ${productId}`);
+
+  //       // Process custom options to handle image uploads properly
+  //       if (Array.isArray(customOptions)) {
+  //         for (
+  //           let optionIndex = 0;
+  //           optionIndex < customOptions.length;
+  //           optionIndex++
+  //         ) {
+  //           const option = customOptions[optionIndex];
+
+  //           if (option.option_values && Array.isArray(option.option_values)) {
+  //             for (
+  //               let valueIndex = 0;
+  //               valueIndex < option.option_values.length;
+  //               valueIndex++
+  //             ) {
+  //               const value = option.option_values[valueIndex];
+
+  //               // Handle image data from the request
+  //               // The image might come from the files array processed in the controller
+  //               if (
+  //                 value.image &&
+  //                 typeof value.image === "object" &&
+  //                 value.image.buffer
+  //               ) {
+  //                 // Image is properly structured with buffer - keep as is
+  //                 this.logger.info(
+  //                   `Found image buffer for option ${optionIndex}, value ${valueIndex}`
+  //                 );
+  //               } else if (
+  //                 value.image_url &&
+  //                 value.image_url.startsWith("http")
+  //               ) {
+  //                 // Existing image URL - preserve it
+  //                 this.logger.info(
+  //                   `Preserving existing image URL for option ${optionIndex}, value ${valueIndex}`
+  //                 );
+  //               }
+  //             }
+  //           }
+  //         }
+  //       }
+
+  //       await this.updateCustomOptions(productId, customOptions);
+  //     }
+
+  //     this.logger.info(`Product ${productId} updated successfully`);
+
+  //     return {
+  //       status: "success",
+  //       statusCode: 200,
+  //       message: "Product updated successfully",
+  //       data: { product_id: productId },
+  //     };
+  //   } catch (err) {
+  //     this.logger.error(`Error updating product: ${err.message}`);
+  //     throw err;
+  //   }
+  // }
+
+  // edit v2.0
   async editProduct(productId, productData, customOptions) {
-    try {
-      this._validateRequiredField(productId, "Product ID");
+  try {
+    this._validateRequiredField(productId, "Product ID");
 
-      if (!this._isValidUUID(productId)) {
+    if (!this._isValidUUID(productId)) {
+      throw {
+        status: "error",
+        statusCode: 400,
+        message: "Invalid product ID format.",
+      };
+    }
+
+    // Check if product exists
+    const existingProduct = await Product.findByPk(productId);
+
+    if (!existingProduct) {
+      return {
+        status: "error",
+        statusCode: 404,
+        message: "Product not found in our records.",
+      };
+    }
+
+    // Validate basic fields if provided
+    if (productData.title && !productData.title.trim()) {
+      throw {
+        status: "error",
+        statusCode: 400,
+        message: "Product title cannot be empty.",
+      };
+    }
+
+    if (productData.weight !== undefined && productData.weight !== null) {
+      this._validateNumericField(productData.weight, "Weight", 0);
+    }
+
+    if (
+      productData.purchase_price_nett !== undefined &&
+      productData.purchase_price_nett !== null
+    ) {
+      this._validateNumericField(
+        productData.purchase_price_nett,
+        "Purchase Price Nett",
+        0
+      );
+    }
+
+    if (
+      productData.regular_price_nett !== undefined &&
+      productData.regular_price_nett !== null
+    ) {
+      this._validateNumericField(
+        productData.regular_price_nett,
+        "Regular Price Nett",
+        0
+      );
+    }
+
+    // Validate and handle tax if provided
+    let tax = null;
+    if (productData.tax_id && this._isValidUUID(productData.tax_id)) {
+      tax = await Tax.findOne({
+        where: {
+          id: productData.tax_id,
+          is_inactive: false,
+        },
+      });
+
+      if (!tax) {
         throw {
-          status: "error",
-          statusCode: 400,
-          message: "Invalid product ID format.",
-        };
-      }
-
-      // Check if product exists
-      const existingProduct = await Product.findByPk(productId);
-
-      if (!existingProduct) {
-        return {
           status: "error",
           statusCode: 404,
-          message: "Product not found in our records.",
+          message: "Tax not found in our records or is inactive.",
         };
       }
+    }
 
-      // Validate basic fields if provided
-      if (productData.title && !productData.title.trim()) {
+    // Validate company and supplier if provided
+    if (productData.company_id && this._isValidUUID(productData.company_id)) {
+      const company = await Company.findOne({
+        where: {
+          id: productData.company_id,
+          is_inactive: false,
+        },
+      });
+
+      if (!company) {
         throw {
           status: "error",
-          statusCode: 400,
-          message: "Product title cannot be empty.",
+          statusCode: 404,
+          message: "Company not found in our records or is inactive.",
         };
       }
+    }
 
-      if (productData.weight !== undefined && productData.weight !== null) {
-        this._validateNumericField(productData.weight, "Weight", 0);
+    if (
+      productData.supplier_id &&
+      this._isValidUUID(productData.supplier_id)
+    ) {
+      const supplier = await Company.findOne({
+        where: {
+          id: productData.supplier_id,
+          is_inactive: false,
+        },
+      });
+
+      if (!supplier) {
+        throw {
+          status: "error",
+          statusCode: 404,
+          message: "Supplier not found or is inactive.",
+        };
       }
+    }
 
-      if (
-        productData.purchase_price_nett !== undefined &&
-        productData.purchase_price_nett !== null
-      ) {
-        this._validateNumericField(
-          productData.purchase_price_nett,
-          "Purchase Price Nett",
-          0
-        );
-      }
+    // Handle unique field validation if they're being updated
+    if (
+      productData.title ||
+      productData.sku ||
+      productData.slug ||
+      productData.barcode ||
+      productData.ean
+    ) {
+      const whereConditions = [];
 
-      if (
-        productData.regular_price_nett !== undefined &&
-        productData.regular_price_nett !== null
-      ) {
-        this._validateNumericField(
-          productData.regular_price_nett,
-          "Regular Price Nett",
-          0
-        );
-      }
+      if (productData.title)
+        whereConditions.push({ title: productData.title });
+      if (productData.sku) whereConditions.push({ sku: productData.sku });
+      if (productData.slug) whereConditions.push({ slug: productData.slug });
+      if (productData.barcode)
+        whereConditions.push({ barcode: productData.barcode });
+      if (productData.ean) whereConditions.push({ ean: productData.ean });
 
-      // Validate and handle tax if provided
-      let tax = null;
-      if (productData.tax_id && this._isValidUUID(productData.tax_id)) {
-        tax = await Tax.findOne({
+      if (whereConditions.length > 0) {
+        const conflictingProduct = await Product.findOne({
           where: {
-            id: productData.tax_id,
-            is_inactive: false,
+            [Op.and]: [
+              { id: { [Op.ne]: productId } },
+              { [Op.or]: whereConditions },
+            ],
           },
         });
 
-        if (!tax) {
+        if (conflictingProduct) {
           throw {
             status: "error",
-            statusCode: 404,
-            message: "Tax not found in our records or is inactive.",
+            statusCode: 400,
+            message:
+              "Another product with the same title, SKU, slug, barcode, or EAN already exists.",
           };
         }
       }
+    }
 
-      // Validate company and supplier if provided
-      if (productData.company_id && this._isValidUUID(productData.company_id)) {
-        const company = await Company.findOne({
-          where: {
-            id: productData.company_id,
-            is_inactive: false,
-          },
-        });
+    // Generate slug if title is being updated
+    let generatedSlug = null;
 
-        if (!company) {
-          throw {
-            status: "error",
-            statusCode: 404,
-            message: "Company not found in our records or is inactive.",
-          };
-        }
-      }
+    if (productData.title && productData.title !== existingProduct.title) {
+      generatedSlug = await this._generateSlug(productData.title, productId);
+    }
 
-      if (
-        productData.supplier_id &&
-        this._isValidUUID(productData.supplier_id)
-      ) {
-        const supplier = await Company.findOne({
-          where: {
-            id: productData.supplier_id,
-            is_inactive: false,
-          },
-        });
+    // ================================================================
+    // FIXED IMAGE HANDLING LOGIC
+    // ================================================================
+    
+    // Start with existing images or empty array
+    let updatedImages = [...(existingProduct.images || [])];
+    let mainImageUrl = existingProduct.main_image_url;
 
-        if (!supplier) {
-          throw {
-            status: "error",
-            statusCode: 404,
-            message: "Supplier not found or is inactive.",
-          };
-        }
-      }
+    this.logger.info(`Starting image update process for product ${productId}`);
+    this.logger.info(`Existing images count: ${updatedImages.length}`);
+    this.logger.info(`New images provided:`, productData.newImages ? productData.newImages.length : 0);
+    this.logger.info(`Existing images data provided:`, productData.existing_images ? 'Yes' : 'No');
 
-      // Handle unique field validation if they're being updated
-      if (
-        productData.title ||
-        productData.sku ||
-        productData.slug ||
-        productData.barcode ||
-        productData.ean
-      ) {
-        const whereConditions = [];
-
-        if (productData.title)
-          whereConditions.push({ title: productData.title });
-        if (productData.sku) whereConditions.push({ sku: productData.sku });
-        if (productData.slug) whereConditions.push({ slug: productData.slug });
-        if (productData.barcode)
-          whereConditions.push({ barcode: productData.barcode });
-        if (productData.ean) whereConditions.push({ ean: productData.ean });
-
-        if (whereConditions.length > 0) {
-          const conflictingProduct = await Product.findOne({
-            where: {
-              [Op.and]: [
-                { id: { [Op.ne]: productId } },
-                { [Op.or]: whereConditions },
-              ],
-            },
-          });
-
-          if (conflictingProduct) {
-            throw {
-              status: "error",
-              statusCode: 400,
-              message:
-                "Another product with the same title, SKU, slug, barcode, or EAN already exists.",
-            };
-          }
-        }
-      }
-
-      // Generate slug if title is being updated
-      let generatedSlug = null;
-
-      if (productData.title && productData.title !== existingProduct.title) {
-        generatedSlug = await this._generateSlug(productData.title, productId);
-      }
-
-      // Handle image updates
-      let updatedImages = [...(existingProduct.images || [])];
-      let mainImageUrl = existingProduct.main_image_url;
-
-      // Process existing images (handle deletions and reordering)
-      if (
-        productData.existing_images &&
-        Array.isArray(productData.existing_images)
-      ) {
-        updatedImages = productData.existing_images;
+    // Handle existing images (reordering, deletions, keeping)
+    if (productData.existing_images !== undefined) {
+      if (Array.isArray(productData.existing_images) && productData.existing_images.length > 0) {
+        // User provided specific existing images to keep
+        updatedImages = [...productData.existing_images];
+        this.logger.info(`Keeping ${updatedImages.length} existing images as provided by user`);
+        
+        // Set main image from first existing image
         if (updatedImages.length > 0) {
           mainImageUrl = updatedImages[0].url;
-        }
-      }
-
-      // Add new images if provided
-      if (
-        productData.newImages &&
-        Array.isArray(productData.newImages) &&
-        productData.newImages.length > 0
-      ) {
-        for (let i = 0; i < productData.newImages.length; i++) {
-          const imageData = productData.newImages[i];
-
-          if (imageData.buffer && imageData.originalName) {
-            try {
-              const imageUrl = await uploadToSpaces(
-                imageData.buffer,
-                imageData.originalName,
-                "products",
-                "public-read"
-              );
-
-              const imageInfo = {
-                id: uuidv4(),
-                url: imageUrl,
-                alt_text: imageData.altText || existingProduct.title,
-                order: updatedImages.length + i + 1,
-                is_main: updatedImages.length === 0 && i === 0,
-                width: imageData.width || null,
-                height: imageData.height || null,
-                size_bytes: imageData.buffer.length,
-                file_name: imageData.originalName,
-                created_at: new Date(),
-              };
-
-              updatedImages.push(imageInfo);
-
-              if (updatedImages.length === 1) {
-                mainImageUrl = imageUrl;
-              }
-            } catch (uploadError) {
-              this.logger.error(
-                `Error uploading image ${i}: ${uploadError.message}`
-              );
-              throw {
-                status: "error",
-                statusCode: 500,
-                message: `Failed to upload image: ${imageData.originalName}`,
-              };
-            }
+          // Ensure first image is marked as main
+          updatedImages[0].is_main = true;
+          // Ensure other images are not marked as main
+          for (let i = 1; i < updatedImages.length; i++) {
+            updatedImages[i].is_main = false;
           }
         }
-      }
-
-      // Calculate prices if relevant fields are being updated
-      let calculatedPurchasePriceGross = existingProduct.purchase_price_gross;
-      let calculatedRegularPriceGross = existingProduct.regular_price_gross;
-      let finalPriceNett = existingProduct.final_price_nett;
-      let finalPriceGross = existingProduct.final_price_gross;
-      let isDiscounted = existingProduct.is_discounted;
-
-      const taxToUse = tax || (await Tax.findByPk(existingProduct.tax_id));
-      const taxRate = parseFloat(taxToUse?.rate || 0);
-      const taxMultiplier = 1 + taxRate / 100;
-
-      if (productData.purchase_price_nett !== undefined) {
-        calculatedPurchasePriceGross = parseFloat(
-          (productData.purchase_price_nett * taxMultiplier).toFixed(2)
-        );
-      }
-
-      if (productData.regular_price_nett !== undefined) {
-        calculatedRegularPriceGross = parseFloat(
-          (productData.regular_price_nett * taxMultiplier).toFixed(2)
-        );
-        finalPriceNett = productData.regular_price_nett;
-        finalPriceGross = calculatedRegularPriceGross;
-      }
-
-      // Handle discount
-      const discountPercentage =
-        productData.discount_percentage_nett !== undefined
-          ? productData.discount_percentage_nett
-          : existingProduct.discount_percentage_nett;
-
-      if (discountPercentage && discountPercentage > 0) {
-        isDiscounted = true;
-        const basePrice =
-          productData.regular_price_nett !== undefined
-            ? productData.regular_price_nett
-            : existingProduct.regular_price_nett;
-        finalPriceNett = basePrice * (1 - discountPercentage / 100);
-        finalPriceGross = finalPriceNett * taxMultiplier;
       } else {
-        isDiscounted = false;
+        // User wants to remove all existing images
+        updatedImages = [];
+        mainImageUrl = "";
+        this.logger.info(`Removing all existing images as requested by user`);
       }
+    }
+    // If existing_images is not provided, keep all existing images
 
-      // Prepare update data
-      const updateData = {
-        ...productData,
-        slug: generatedSlug || existingProduct.slug,
-        purchase_price_gross: calculatedPurchasePriceGross,
-        regular_price_gross: calculatedRegularPriceGross,
-        final_price_nett: parseFloat(finalPriceNett),
-        final_price_gross: parseFloat(finalPriceGross),
-        is_discounted: isDiscounted,
-        custom_details:
-          productData.custom_details !== undefined
-            ? this._processCustomDetails(productData.custom_details)
-            : existingProduct.custom_details,
-        images: updatedImages,
-        main_image_url: mainImageUrl,
-        updated_at: new Date(),
-      };
+    // Handle new image uploads
+    if (
+      productData.newImages &&
+      Array.isArray(productData.newImages) &&
+      productData.newImages.length > 0
+    ) {
+      this.logger.info(`Processing ${productData.newImages.length} new images for upload`);
 
-      // Remove fields that shouldn't be directly updated
-      delete updateData.newImages;
-      delete updateData.existing_images;
-      delete updateData.services;
-      delete updateData.categories;
+      for (let i = 0; i < productData.newImages.length; i++) {
+        const imageData = productData.newImages[i];
 
-      // Update the product
-      await existingProduct.update(updateData);
-
-      // Handle product services
-      if (productData.services !== undefined) {
-        // Remove existing services
-        await ProductService.destroy({
-          where: { product_id: productId },
+        this.logger.info(`Processing new image ${i + 1}:`, {
+          hasBuffer: !!imageData.buffer,
+          hasOriginalName: !!imageData.originalName,
+          bufferLength: imageData.buffer ? imageData.buffer.length : 0,
+          originalName: imageData.originalName
         });
 
-        // Add new services
-        if (
-          Array.isArray(productData.services) &&
-          productData.services.length > 0
-        ) {
-          for (const serviceData of productData.services) {
-            try {
-              await this._createProductService(productId, serviceData);
-            } catch (serviceError) {
-              this.logger.error(
-                `Error creating service "${serviceData.title}": ${serviceError.message}`
-              );
-              throw serviceError;
+        if (imageData.buffer && imageData.originalName) {
+          try {
+            this.logger.info(`Uploading image: ${imageData.originalName}`);
+            
+            const imageUrl = await uploadToSpaces(
+              imageData.buffer,
+              imageData.originalName,
+              "products",
+              "public-read"
+            );
+
+            this.logger.info(`Successfully uploaded image to: ${imageUrl}`);
+
+            const imageInfo = {
+              id: uuidv4(),
+              url: imageUrl,
+              alt_text: imageData.altText || productData.title || existingProduct.title,
+              order: updatedImages.length + i + 1,
+              is_main: updatedImages.length === 0 && i === 0, // First image overall becomes main
+              width: imageData.width || null,
+              height: imageData.height || null,
+              size_bytes: imageData.buffer.length,
+              file_name: imageData.originalName,
+              created_at: new Date(),
+            };
+
+            updatedImages.push(imageInfo);
+
+            // If this is the first image overall, set it as main image URL
+            if (updatedImages.length === 1) {
+              mainImageUrl = imageUrl;
+              this.logger.info(`Set main image URL to: ${imageUrl}`);
             }
+
+          } catch (uploadError) {
+            this.logger.error(
+              `Error uploading image ${i}: ${uploadError.message}`
+            );
+            this.logger.error(`Upload error stack:`, uploadError.stack);
+            throw {
+              status: "error",
+              statusCode: 500,
+              message: `Failed to upload image: ${imageData.originalName}. Error: ${uploadError.message}`,
+            };
           }
-
-          await existingProduct.update({ has_services: true });
         } else {
-          await existingProduct.update({ has_services: false });
+          this.logger.warn(`Skipping image ${i + 1} - missing buffer or originalName:`, {
+            hasBuffer: !!imageData.buffer,
+            hasOriginalName: !!imageData.originalName
+          });
         }
       }
+    }
 
-      // Handle categories
-      if (productData.categories !== undefined) {
-        // Remove existing category associations
-        await ProductCategory.destroy({
-          where: { product_id: productId },
-        });
+    // Ensure we have at least one image
+    if (updatedImages.length === 0 && !mainImageUrl) {
+      this.logger.warn(`No images after processing - this might cause issues`);
+    }
 
-        // Add new category associations
-        if (
-          Array.isArray(productData.categories) &&
-          productData.categories.length > 0
+    // Re-order images and ensure proper main image marking
+    if (updatedImages.length > 0) {
+      updatedImages = updatedImages.map((img, index) => ({
+        ...img,
+        order: index + 1,
+        is_main: index === 0
+      }));
+      
+      // Ensure mainImageUrl is set to first image
+      if (!mainImageUrl) {
+        mainImageUrl = updatedImages[0].url;
+      }
+    }
+
+    this.logger.info(`Final image processing result:`, {
+      totalImages: updatedImages.length,
+      mainImageUrl: mainImageUrl,
+      imageUrls: updatedImages.map(img => img.url)
+    });
+
+    // ================================================================
+    // END OF FIXED IMAGE HANDLING LOGIC
+    // ================================================================
+
+    // Calculate prices if relevant fields are being updated
+    let calculatedPurchasePriceGross = existingProduct.purchase_price_gross;
+    let calculatedRegularPriceGross = existingProduct.regular_price_gross;
+    let finalPriceNett = existingProduct.final_price_nett;
+    let finalPriceGross = existingProduct.final_price_gross;
+    let isDiscounted = existingProduct.is_discounted;
+
+    const taxToUse = tax || (await Tax.findByPk(existingProduct.tax_id));
+    const taxRate = parseFloat(taxToUse?.rate || 0);
+    const taxMultiplier = 1 + taxRate / 100;
+
+    if (productData.purchase_price_nett !== undefined) {
+      calculatedPurchasePriceGross = parseFloat(
+        (productData.purchase_price_nett * taxMultiplier).toFixed(2)
+      );
+    }
+
+    if (productData.regular_price_nett !== undefined) {
+      calculatedRegularPriceGross = parseFloat(
+        (productData.regular_price_nett * taxMultiplier).toFixed(2)
+      );
+      finalPriceNett = productData.regular_price_nett;
+      finalPriceGross = calculatedRegularPriceGross;
+    }
+
+    // Handle discount
+    const discountPercentage =
+      productData.discount_percentage_nett !== undefined
+        ? productData.discount_percentage_nett
+        : existingProduct.discount_percentage_nett;
+
+    if (discountPercentage && discountPercentage > 0) {
+      isDiscounted = true;
+      const basePrice =
+        productData.regular_price_nett !== undefined
+          ? productData.regular_price_nett
+          : existingProduct.regular_price_nett;
+      finalPriceNett = basePrice * (1 - discountPercentage / 100);
+      finalPriceGross = finalPriceNett * taxMultiplier;
+    } else {
+      isDiscounted = false;
+    }
+
+    // Prepare update data
+    const updateData = {
+      ...productData,
+      slug: generatedSlug || existingProduct.slug,
+      purchase_price_gross: calculatedPurchasePriceGross,
+      regular_price_gross: calculatedRegularPriceGross,
+      final_price_nett: parseFloat(finalPriceNett),
+      final_price_gross: parseFloat(finalPriceGross),
+      is_discounted: isDiscounted,
+      custom_details:
+        productData.custom_details !== undefined
+          ? this._processCustomDetails(productData.custom_details)
+          : existingProduct.custom_details,
+      images: updatedImages,
+      main_image_url: mainImageUrl,
+      updated_at: new Date(),
+    };
+
+    // Remove fields that shouldn't be directly updated
+    delete updateData.newImages;
+    delete updateData.existing_images;
+    delete updateData.services;
+    delete updateData.categories;
+
+    this.logger.info(`Updating product with image data:`, {
+      imagesCount: updateData.images.length,
+      mainImageUrl: updateData.main_image_url
+    });
+
+    // Update the product
+    await existingProduct.update(updateData);
+
+    this.logger.info(`Product ${productId} updated successfully with ${updateData.images.length} images`);
+
+    // Handle product services
+    if (productData.services !== undefined) {
+      // Remove existing services
+      await ProductService.destroy({
+        where: { product_id: productId },
+      });
+
+      // Add new services
+      if (
+        Array.isArray(productData.services) &&
+        productData.services.length > 0
+      ) {
+        for (const serviceData of productData.services) {
+          try {
+            await this._createProductService(productId, serviceData);
+          } catch (serviceError) {
+            this.logger.error(
+              `Error creating service "${serviceData.title}": ${serviceError.message}`
+            );
+            throw serviceError;
+          }
+        }
+
+        await existingProduct.update({ has_services: true });
+      } else {
+        await existingProduct.update({ has_services: false });
+      }
+    }
+
+    // Handle categories
+    if (productData.categories !== undefined) {
+      // Remove existing category associations
+      await ProductCategory.destroy({
+        where: { product_id: productId },
+      });
+
+      // Add new category associations
+      if (
+        Array.isArray(productData.categories) &&
+        productData.categories.length > 0
+      ) {
+        await this._assignCategoriesToProduct(
+          productId,
+          productData.categories
+        );
+      }
+    }
+
+    // Handle custom options update
+    if (customOptions !== undefined) {
+      this.logger.info(`Updating custom options for product ${productId}`);
+
+      // Process custom options to handle image uploads properly
+      if (Array.isArray(customOptions)) {
+        for (
+          let optionIndex = 0;
+          optionIndex < customOptions.length;
+          optionIndex++
         ) {
-          await this._assignCategoriesToProduct(
-            productId,
-            productData.categories
-          );
-        }
-      }
+          const option = customOptions[optionIndex];
 
-      // Handle custom options update - THIS IS CRUCIAL
-      // if (customOptions !== undefined) {
-      //   this.logger.info(`Updating custom options for product ${productId}`);
-      //   await this.updateCustomOptions(productId, customOptions);
-      // }
+          if (option.option_values && Array.isArray(option.option_values)) {
+            for (
+              let valueIndex = 0;
+              valueIndex < option.option_values.length;
+              valueIndex++
+            ) {
+              const value = option.option_values[valueIndex];
 
-      if (customOptions !== undefined) {
-        this.logger.info(`Updating custom options for product ${productId}`);
-
-        // Process custom options to handle image uploads properly
-        if (Array.isArray(customOptions)) {
-          for (
-            let optionIndex = 0;
-            optionIndex < customOptions.length;
-            optionIndex++
-          ) {
-            const option = customOptions[optionIndex];
-
-            if (option.option_values && Array.isArray(option.option_values)) {
-              for (
-                let valueIndex = 0;
-                valueIndex < option.option_values.length;
-                valueIndex++
+              // Handle image data from the request
+              // The image might come from the files array processed in the controller
+              if (
+                value.image &&
+                typeof value.image === "object" &&
+                value.image.buffer
               ) {
-                const value = option.option_values[valueIndex];
-
-                // Handle image data from the request
-                // The image might come from the files array processed in the controller
-                if (
-                  value.image &&
-                  typeof value.image === "object" &&
-                  value.image.buffer
-                ) {
-                  // Image is properly structured with buffer - keep as is
-                  this.logger.info(
-                    `Found image buffer for option ${optionIndex}, value ${valueIndex}`
-                  );
-                } else if (
-                  value.image_url &&
-                  value.image_url.startsWith("http")
-                ) {
-                  // Existing image URL - preserve it
-                  this.logger.info(
-                    `Preserving existing image URL for option ${optionIndex}, value ${valueIndex}`
-                  );
-                }
+                // Image is properly structured with buffer - keep as is
+                this.logger.info(
+                  `Found image buffer for option ${optionIndex}, value ${valueIndex}`
+                );
+              } else if (
+                value.image_url &&
+                value.image_url.startsWith("http")
+              ) {
+                // Existing image URL - preserve it
+                this.logger.info(
+                  `Preserving existing image URL for option ${optionIndex}, value ${valueIndex}`
+                );
               }
             }
           }
         }
-
-        await this.updateCustomOptions(productId, customOptions);
       }
 
-      this.logger.info(`Product ${productId} updated successfully`);
-
-      return {
-        status: "success",
-        statusCode: 200,
-        message: "Product updated successfully",
-        data: { product_id: productId },
-      };
-    } catch (err) {
-      this.logger.error(`Error updating product: ${err.message}`);
-      throw err;
+      await this.updateCustomOptions(productId, customOptions);
     }
+
+    this.logger.info(`Product ${productId} updated successfully`);
+
+    return {
+      status: "success",
+      statusCode: 200,
+      message: "Product updated successfully",
+      data: { 
+        product_id: productId,
+        images_count: updatedImages.length,
+        main_image_url: mainImageUrl
+      },
+    };
+  } catch (err) {
+    this.logger.error(`Error updating product: ${err.message}`);
+    this.logger.error(`Error stack trace: ${err.stack}`);
+    throw err;
   }
+}
 
   // Create a product service
   async _createProductService(productId, serviceData) {

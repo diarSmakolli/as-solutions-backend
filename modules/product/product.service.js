@@ -2836,9 +2836,11 @@ class ProductServiceLayer {
 
         // Custom fields and images
         custom_details: [...(originalProduct.custom_details || [])],
-        images: [],
-        main_image_url: null,
-
+        images: duplicatedImages,
+        main_image_url:
+          duplicatedImages.length > 0
+            ? duplicatedImages[0].url
+            : originalProduct.main_image_url,
         // Foreign keys
         tax_id: originalProduct.tax_id,
         company_id: originalProduct.company_id,

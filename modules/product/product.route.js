@@ -36,7 +36,7 @@ router.post('/create', authGuard, roleGuard("global-administrator", "administrat
 });
 
 // Edit/Update product by ID
-router.put('/:id/edit', authGuard, roleGuard("global-administrator", "administrator"), upload.array('images', 10), (req, res, next) => {
+router.put('/:id/edit', authGuard, roleGuard("global-administrator", "administrator"), upload.array('newImages', 10), (req, res, next) => {
   ProductController.editProduct(req, res, next);
 });
 

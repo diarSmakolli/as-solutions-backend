@@ -136,13 +136,32 @@ class ProductController {
       const productData = req.body;
 
       // Handle file uploads if present
+      // if (req.files && req.files.length > 0) {
+      //   productData.new_images = req.files.map((file) => ({
+      //     buffer: file.buffer,
+      //     originalName: file.originalname,
+      //     altText: file.fieldname,
+      //   }));
+      // }
+
+      const newImages = [];
+
       if (req.files && req.files.length > 0) {
-        productData.new_images = req.files.map((file) => ({
-          buffer: file.buffer,
-          originalName: file.originalname,
-          altText: file.fieldname,
-        }));
+        req.files.forEach((file) => {
+          newImages.push({
+            buffer: file.buffer,
+            originalName: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size,
+          });
+        });
       }
+
+      // Add newImages to productData
+      if (newImages.length > 0) {
+        productData.newImages = newImages;
+      }
+      
 
       // Parse JSON fields from FormData
       if (productData.services && typeof productData.services === "string") {

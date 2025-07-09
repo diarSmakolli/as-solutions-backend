@@ -693,6 +693,7 @@ class ProductServiceLayer {
     }
   }
 
+
   // edit product method.
   async editProduct(productId, productData, customOptions) {
     try {
@@ -2709,21 +2710,21 @@ class ProductServiceLayer {
       const newSlug = await this._generateSlug(newTitle);
 
       // Duplicate images - keep original URLs but create new metadata
-      let duplicatedImages = [];
-      if (originalProduct.images && originalProduct.images.length > 0) {
-        duplicatedImages = originalProduct.images.map((img, index) => ({
-          id: uuidv4(),
-          url: img.url,
-          alt_text: img.alt_text,
-          order: img.order,
-          is_main: index === 0,
-          width: img.width,
-          height: img.height,
-          size_bytes: img.size_bytes,
-          file_name: `${newSKU}-${img.file_name}`,
-          created_at: new Date(),
-        }));
-      }
+      // let duplicatedImages = [];
+      // if (originalProduct.images && originalProduct.images.length > 0) {
+      //   duplicatedImages = originalProduct.images.map((img, index) => ({
+      //     id: uuidv4(),
+      //     url: img.url,
+      //     alt_text: img.alt_text,
+      //     order: img.order,
+      //     is_main: index === 0,
+      //     width: img.width,
+      //     height: img.height,
+      //     size_bytes: img.size_bytes,
+      //     file_name: `${newSKU}-${img.file_name}`,
+      //     created_at: new Date(),
+      //   }));
+      // }
 
       // Calculate pricing with tax
       const tax = originalProduct.tax;
@@ -2835,11 +2836,8 @@ class ProductServiceLayer {
 
         // Custom fields and images
         custom_details: [...(originalProduct.custom_details || [])],
-        images: duplicatedImages,
-        main_image_url:
-          duplicatedImages.length > 0
-            ? duplicatedImages[0].url
-            : originalProduct.main_image_url,
+        images: [],
+        main_image_url: null,
 
         // Foreign keys
         tax_id: originalProduct.tax_id,

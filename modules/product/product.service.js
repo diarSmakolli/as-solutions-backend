@@ -693,420 +693,6 @@ class ProductServiceLayer {
     }
   }
 
-
-  // edit product method.
-  // async editProduct(productId, productData, customOptions) {
-  //   try {
-  //     this._validateRequiredField(productId, "Product ID");
-
-  //     if (!this._isValidUUID(productId)) {
-  //       throw {
-  //         status: "error",
-  //         statusCode: 400,
-  //         message: "Invalid product ID format.",
-  //       };
-  //     }
-
-  //     // Check if product exists
-  //     const existingProduct = await Product.findByPk(productId);
-
-  //     if (!existingProduct) {
-  //       return {
-  //         status: "error",
-  //         statusCode: 404,
-  //         message: "Product not found in our records.",
-  //       };
-  //     }
-
-  //     // Validate basic fields if provided
-  //     if (productData.title && !productData.title.trim()) {
-  //       throw {
-  //         status: "error",
-  //         statusCode: 400,
-  //         message: "Product title cannot be empty.",
-  //       };
-  //     }
-
-  //     if (productData.weight !== undefined && productData.weight !== null) {
-  //       this._validateNumericField(productData.weight, "Weight", 0);
-  //     }
-
-  //     if (
-  //       productData.purchase_price_nett !== undefined &&
-  //       productData.purchase_price_nett !== null
-  //     ) {
-  //       this._validateNumericField(
-  //         productData.purchase_price_nett,
-  //         "Purchase Price Nett",
-  //         0
-  //       );
-  //     }
-
-  //     if (
-  //       productData.regular_price_nett !== undefined &&
-  //       productData.regular_price_nett !== null
-  //     ) {
-  //       this._validateNumericField(
-  //         productData.regular_price_nett,
-  //         "Regular Price Nett",
-  //         0
-  //       );
-  //     }
-
-  //     // Validate and handle tax if provided
-  //     let tax = null;
-  //     if (productData.tax_id && this._isValidUUID(productData.tax_id)) {
-  //       tax = await Tax.findOne({
-  //         where: {
-  //           id: productData.tax_id,
-  //           is_inactive: false,
-  //         },
-  //       });
-
-  //       if (!tax) {
-  //         throw {
-  //           status: "error",
-  //           statusCode: 404,
-  //           message: "Tax not found in our records or is inactive.",
-  //         };
-  //       }
-  //     }
-
-  //     // Validate company and supplier if provided
-  //     if (productData.company_id && this._isValidUUID(productData.company_id)) {
-  //       const company = await Company.findOne({
-  //         where: {
-  //           id: productData.company_id,
-  //           is_inactive: false,
-  //         },
-  //       });
-
-  //       if (!company) {
-  //         throw {
-  //           status: "error",
-  //           statusCode: 404,
-  //           message: "Company not found in our records or is inactive.",
-  //         };
-  //       }
-  //     }
-
-  //     if (
-  //       productData.supplier_id &&
-  //       this._isValidUUID(productData.supplier_id)
-  //     ) {
-  //       const supplier = await Company.findOne({
-  //         where: {
-  //           id: productData.supplier_id,
-  //           is_inactive: false,
-  //         },
-  //       });
-
-  //       if (!supplier) {
-  //         throw {
-  //           status: "error",
-  //           statusCode: 404,
-  //           message: "Supplier not found or is inactive.",
-  //         };
-  //       }
-  //     }
-
-  //     // Handle unique field validation if they're being updated
-  //     if (
-  //       productData.title ||
-  //       productData.sku ||
-  //       productData.slug ||
-  //       productData.barcode ||
-  //       productData.ean
-  //     ) {
-  //       const whereConditions = [];
-
-  //       if (productData.title)
-  //         whereConditions.push({ title: productData.title });
-  //       if (productData.sku) whereConditions.push({ sku: productData.sku });
-  //       if (productData.slug) whereConditions.push({ slug: productData.slug });
-  //       if (productData.barcode)
-  //         whereConditions.push({ barcode: productData.barcode });
-  //       if (productData.ean) whereConditions.push({ ean: productData.ean });
-
-  //       if (whereConditions.length > 0) {
-  //         const conflictingProduct = await Product.findOne({
-  //           where: {
-  //             [Op.and]: [
-  //               { id: { [Op.ne]: productId } },
-  //               { [Op.or]: whereConditions },
-  //             ],
-  //           },
-  //         });
-
-  //         if (conflictingProduct) {
-  //           throw {
-  //             status: "error",
-  //             statusCode: 400,
-  //             message:
-  //               "Another product with the same title, SKU, slug, barcode, or EAN already exists.",
-  //           };
-  //         }
-  //       }
-  //     }
-
-  //     // Generate slug if title is being updated
-  //     let generatedSlug = null;
-
-  //     if (productData.title && productData.title !== existingProduct.title) {
-  //       generatedSlug = await this._generateSlug(productData.title, productId);
-  //     }
-
-  //     // Handle image updates
-  //     let updatedImages = [...(existingProduct.images || [])];
-  //     let mainImageUrl = existingProduct.main_image_url;
-
-  //     // Process existing images (handle deletions and reordering)
-  //     if (
-  //       productData.existing_images &&
-  //       Array.isArray(productData.existing_images)
-  //     ) {
-  //       updatedImages = productData.existing_images;
-  //       if (updatedImages.length > 0) {
-  //         mainImageUrl = updatedImages[0].url;
-  //       }
-  //     }
-
-  //     // Add new images if provided
-  //     if (
-  //       productData.newImages &&
-  //       Array.isArray(productData.newImages) &&
-  //       productData.newImages.length > 0
-  //     ) {
-  //       for (let i = 0; i < productData.newImages.length; i++) {
-  //         const imageData = productData.newImages[i];
-
-  //         if (imageData.buffer && imageData.originalName) {
-  //           try {
-  //             const imageUrl = await uploadToSpaces(
-  //               imageData.buffer,
-  //               imageData.originalName,
-  //               "products",
-  //               "public-read"
-  //             );
-
-  //             const imageInfo = {
-  //               id: uuidv4(),
-  //               url: imageUrl,
-  //               alt_text: imageData.altText || existingProduct.title,
-  //               order: updatedImages.length + i + 1,
-  //               is_main: updatedImages.length === 0 && i === 0,
-  //               width: imageData.width || null,
-  //               height: imageData.height || null,
-  //               size_bytes: imageData.buffer.length,
-  //               file_name: imageData.originalName,
-  //               created_at: new Date(),
-  //             };
-
-  //             updatedImages.push(imageInfo);
-
-  //             if (updatedImages.length === 1) {
-  //               mainImageUrl = imageUrl;
-  //             }
-  //           } catch (uploadError) {
-  //             this.logger.error(
-  //               `Error uploading image ${i}: ${uploadError.message}`
-  //             );
-  //             throw {
-  //               status: "error",
-  //               statusCode: 500,
-  //               message: `Failed to upload image: ${imageData.originalName}`,
-  //             };
-  //           }
-  //         }
-  //       }
-  //     }
-
-  //     // Calculate prices if relevant fields are being updated
-  //     let calculatedPurchasePriceGross = existingProduct.purchase_price_gross;
-  //     let calculatedRegularPriceGross = existingProduct.regular_price_gross;
-  //     let finalPriceNett = existingProduct.final_price_nett;
-  //     let finalPriceGross = existingProduct.final_price_gross;
-  //     let isDiscounted = existingProduct.is_discounted;
-
-  //     const taxToUse = tax || (await Tax.findByPk(existingProduct.tax_id));
-  //     const taxRate = parseFloat(taxToUse?.rate || 0);
-  //     const taxMultiplier = 1 + taxRate / 100;
-
-  //     if (productData.purchase_price_nett !== undefined) {
-  //       calculatedPurchasePriceGross = parseFloat(
-  //         (productData.purchase_price_nett * taxMultiplier).toFixed(2)
-  //       );
-  //     }
-
-  //     if (productData.regular_price_nett !== undefined) {
-  //       calculatedRegularPriceGross = parseFloat(
-  //         (productData.regular_price_nett * taxMultiplier).toFixed(2)
-  //       );
-  //       finalPriceNett = productData.regular_price_nett;
-  //       finalPriceGross = calculatedRegularPriceGross;
-  //     }
-
-  //     // Handle discount
-  //     const discountPercentage =
-  //       productData.discount_percentage_nett !== undefined
-  //         ? productData.discount_percentage_nett
-  //         : existingProduct.discount_percentage_nett;
-
-  //     if (discountPercentage && discountPercentage > 0) {
-  //       isDiscounted = true;
-  //       const basePrice =
-  //         productData.regular_price_nett !== undefined
-  //           ? productData.regular_price_nett
-  //           : existingProduct.regular_price_nett;
-  //       finalPriceNett = basePrice * (1 - discountPercentage / 100);
-  //       finalPriceGross = finalPriceNett * taxMultiplier;
-  //     } else {
-  //       isDiscounted = false;
-  //     }
-
-  //     // Prepare update data
-  //     const updateData = {
-  //       ...productData,
-  //       slug: generatedSlug || existingProduct.slug,
-  //       purchase_price_gross: calculatedPurchasePriceGross,
-  //       regular_price_gross: calculatedRegularPriceGross,
-  //       final_price_nett: parseFloat(finalPriceNett),
-  //       final_price_gross: parseFloat(finalPriceGross),
-  //       is_discounted: isDiscounted,
-  //       custom_details:
-  //         productData.custom_details !== undefined
-  //           ? this._processCustomDetails(productData.custom_details)
-  //           : existingProduct.custom_details,
-  //       images: updatedImages,
-  //       main_image_url: mainImageUrl,
-  //       updated_at: new Date(),
-  //     };
-
-  //     // Remove fields that shouldn't be directly updated
-  //     delete updateData.newImages;
-  //     delete updateData.existing_images;
-  //     delete updateData.services;
-  //     delete updateData.categories;
-
-  //     // Update the product
-  //     await existingProduct.update(updateData);
-
-  //     // Handle product services
-  //     if (productData.services !== undefined) {
-  //       // Remove existing services
-  //       await ProductService.destroy({
-  //         where: { product_id: productId },
-  //       });
-
-  //       // Add new services
-  //       if (
-  //         Array.isArray(productData.services) &&
-  //         productData.services.length > 0
-  //       ) {
-  //         for (const serviceData of productData.services) {
-  //           try {
-  //             await this._createProductService(productId, serviceData);
-  //           } catch (serviceError) {
-  //             this.logger.error(
-  //               `Error creating service "${serviceData.title}": ${serviceError.message}`
-  //             );
-  //             throw serviceError;
-  //           }
-  //         }
-
-  //         await existingProduct.update({ has_services: true });
-  //       } else {
-  //         await existingProduct.update({ has_services: false });
-  //       }
-  //     }
-
-  //     // Handle categories
-  //     if (productData.categories !== undefined) {
-  //       // Remove existing category associations
-  //       await ProductCategory.destroy({
-  //         where: { product_id: productId },
-  //       });
-
-  //       // Add new category associations
-  //       if (
-  //         Array.isArray(productData.categories) &&
-  //         productData.categories.length > 0
-  //       ) {
-  //         await this._assignCategoriesToProduct(
-  //           productId,
-  //           productData.categories
-  //         );
-  //       }
-  //     }
-
-  //     // Handle custom options update - THIS IS CRUCIAL
-  //     // if (customOptions !== undefined) {
-  //     //   this.logger.info(`Updating custom options for product ${productId}`);
-  //     //   await this.updateCustomOptions(productId, customOptions);
-  //     // }
-
-  //     if (customOptions !== undefined) {
-  //       this.logger.info(`Updating custom options for product ${productId}`);
-
-  //       // Process custom options to handle image uploads properly
-  //       if (Array.isArray(customOptions)) {
-  //         for (
-  //           let optionIndex = 0;
-  //           optionIndex < customOptions.length;
-  //           optionIndex++
-  //         ) {
-  //           const option = customOptions[optionIndex];
-
-  //           if (option.option_values && Array.isArray(option.option_values)) {
-  //             for (
-  //               let valueIndex = 0;
-  //               valueIndex < option.option_values.length;
-  //               valueIndex++
-  //             ) {
-  //               const value = option.option_values[valueIndex];
-
-  //               // Handle image data from the request
-  //               // The image might come from the files array processed in the controller
-  //               if (
-  //                 value.image &&
-  //                 typeof value.image === "object" &&
-  //                 value.image.buffer
-  //               ) {
-  //                 // Image is properly structured with buffer - keep as is
-  //                 this.logger.info(
-  //                   `Found image buffer for option ${optionIndex}, value ${valueIndex}`
-  //                 );
-  //               } else if (
-  //                 value.image_url &&
-  //                 value.image_url.startsWith("http")
-  //               ) {
-  //                 // Existing image URL - preserve it
-  //                 this.logger.info(
-  //                   `Preserving existing image URL for option ${optionIndex}, value ${valueIndex}`
-  //                 );
-  //               }
-  //             }
-  //           }
-  //         }
-  //       }
-
-  //       await this.updateCustomOptions(productId, customOptions);
-  //     }
-
-  //     this.logger.info(`Product ${productId} updated successfully`);
-
-  //     return {
-  //       status: "success",
-  //       statusCode: 200,
-  //       message: "Product updated successfully",
-  //       data: { product_id: productId },
-  //     };
-  //   } catch (err) {
-  //     this.logger.error(`Error updating product: ${err.message}`);
-  //     throw err;
-  //   }
-  // }
-
   // edit v2.0
   async editProduct(productId, productData, customOptions) {
   try {
@@ -3121,6 +2707,7 @@ class ProductServiceLayer {
   // }
 
   // v2.0
+  // duplicate product
   async duplicateProduct(productId, duplicateData = {}) {
     try {
       this._validateRequiredField(productId, "Product ID");
@@ -3205,21 +2792,21 @@ class ProductServiceLayer {
       const newSlug = await this._generateSlug(newTitle);
 
       // Duplicate images - keep original URLs but create new metadata
-      // let duplicatedImages = [];
-      // if (originalProduct.images && originalProduct.images.length > 0) {
-      //   duplicatedImages = originalProduct.images.map((img, index) => ({
-      //     id: uuidv4(),
-      //     url: img.url,
-      //     alt_text: img.alt_text,
-      //     order: img.order,
-      //     is_main: index === 0,
-      //     width: img.width,
-      //     height: img.height,
-      //     size_bytes: img.size_bytes,
-      //     file_name: `${newSKU}-${img.file_name}`,
-      //     created_at: new Date(),
-      //   }));
-      // }
+      let duplicatedImages = [];
+      if (originalProduct.images && originalProduct.images.length > 0) {
+        duplicatedImages = originalProduct.images.map((img, index) => ({
+          id: uuidv4(),
+          url: img.url,
+          alt_text: img.alt_text,
+          order: img.order,
+          is_main: index === 0,
+          width: img.width,
+          height: img.height,
+          size_bytes: img.size_bytes,
+          file_name: `${newSKU}-${img.file_name}`,
+          created_at: new Date(),
+        }));
+      }
 
       // Calculate pricing with tax
       const tax = originalProduct.tax;
@@ -3336,6 +2923,7 @@ class ProductServiceLayer {
           duplicatedImages.length > 0
             ? duplicatedImages[0].url
             : originalProduct.main_image_url,
+
         // Foreign keys
         tax_id: originalProduct.tax_id,
         company_id: originalProduct.company_id,
@@ -3364,19 +2952,19 @@ class ProductServiceLayer {
         for (const originalService of originalProduct.product_services) {
           try {
             await this._createProductService(newProduct.id, {
-            title: originalService.title,
-            description: originalService.description,
-            full_description: originalService.full_description,
-            price: originalService.price,
-            thumbnail: originalService.thumbnail,
-            is_required: originalService.is_required,
-            is_active: originalService.is_active,
-            standalone: originalService.standalone,
-            service_type: originalService.service_type,
-            company_id: originalService.company_id,
-          });
+              title: originalService.title,
+              description: originalService.description,
+              full_description: originalService.full_description,
+              price: originalService.price,
+              thumbnail: originalService.thumbnail,
+              is_required: originalService.is_required,
+              is_active: originalService.is_active,
+              standalone: originalService.standalone,
+              service_type: originalService.service_type,
+              company_id: originalService.company_id,
+            });
 
-          duplicatedServicesCount++;
+            duplicatedServicesCount++;
             this.logger.info(
               `Service "${originalService.title}" duplicated successfully`
             );
@@ -3384,7 +2972,6 @@ class ProductServiceLayer {
             this.logger.error(
               `Error duplicating service "${originalService.title}": ${serviceError.message}`
             );
-            // Continue with other services even if one fails
           }
         }
       }
@@ -3400,16 +2987,14 @@ class ProductServiceLayer {
           const originalCategory = originalProduct.categories[i];
 
           try {
-            await ProductCategory.create(
-              {
-                product_id: newProduct.id,
-                category_id: originalCategory.id,
-                is_primary:
-                  originalCategory.product_category_info?.is_primary || false,
-                created_at: new Date(),
-                updated_at: new Date(),
-              },
-            );
+            await ProductCategory.create({
+              product_id: newProduct.id,
+              category_id: originalCategory.id,
+              is_primary:
+                originalCategory.product_category_info?.is_primary || false,
+              created_at: new Date(),
+              updated_at: new Date(),
+            });
 
             duplicatedCategoriesCount++;
             this.logger.info(
@@ -3437,51 +3022,47 @@ class ProductServiceLayer {
         for (const originalOption of originalProduct.custom_options) {
           try {
             // Create the custom option
-            const duplicatedOption = await ProductCustomOption.create(
-              {
-                product_id: newProduct.id,
-                option_name: originalOption.option_name,
-                option_type: originalOption.option_type,
-                is_required: originalOption.is_required,
-                sort_order: originalOption.sort_order,
-                placeholder_text: originalOption.placeholder_text,
-                help_text: originalOption.help_text,
-                validation_rules: originalOption.validation_rules,
-                is_active: originalOption.is_active,
-                affects_price: originalOption.affects_price,
-                price_modifier_type: originalOption.price_modifier_type,
-                base_price_modifier: originalOption.base_price_modifier,
-                created_at: new Date(),
-                updated_at: new Date(),
-              },
-            );
+            const duplicatedOption = await ProductCustomOption.create({
+              product_id: newProduct.id,
+              option_name: originalOption.option_name,
+              option_type: originalOption.option_type,
+              is_required: originalOption.is_required,
+              sort_order: originalOption.sort_order,
+              placeholder_text: originalOption.placeholder_text,
+              help_text: originalOption.help_text,
+              validation_rules: originalOption.validation_rules,
+              is_active: originalOption.is_active,
+              affects_price: originalOption.affects_price,
+              price_modifier_type: originalOption.price_modifier_type,
+              base_price_modifier: originalOption.base_price_modifier,
+              created_at: new Date(),
+              updated_at: new Date(),
+            });
 
-      //       // Duplicate option values if they exist
+            //       // Duplicate option values if they exist
             if (
               originalOption.option_values &&
               originalOption.option_values.length > 0
             ) {
               for (const originalValue of originalOption.option_values) {
                 try {
-                  await ProductCustomOptionValue.create(
-                    {
-                      custom_option_id: duplicatedOption.id,
-                      option_value: originalValue.option_value,
-                      display_name: originalValue.display_name,
-                      sort_order: originalValue.sort_order,
-                      is_default: originalValue.is_default,
-                      is_active: originalValue.is_active,
-                      price_modifier: originalValue.price_modifier,
-                      price_modifier_type: originalValue.price_modifier_type,
-                      image_url: originalValue.image_url, // Keep same image URL
-                      image_alt_text: originalValue.image_alt_text,
-                      additional_data: originalValue.additional_data,
-                      stock_quantity: originalValue.stock_quantity,
-                      is_in_stock: originalValue.is_in_stock,
-                      created_at: new Date(),
-                      updated_at: new Date(),
-                    },
-                  );
+                  await ProductCustomOptionValue.create({
+                    custom_option_id: duplicatedOption.id,
+                    option_value: originalValue.option_value,
+                    display_name: originalValue.display_name,
+                    sort_order: originalValue.sort_order,
+                    is_default: originalValue.is_default,
+                    is_active: originalValue.is_active,
+                    price_modifier: originalValue.price_modifier,
+                    price_modifier_type: originalValue.price_modifier_type,
+                    image_url: originalValue.image_url, // Keep same image URL
+                    image_alt_text: originalValue.image_alt_text,
+                    additional_data: originalValue.additional_data,
+                    stock_quantity: originalValue.stock_quantity,
+                    is_in_stock: originalValue.is_in_stock,
+                    created_at: new Date(),
+                    updated_at: new Date(),
+                  });
                 } catch (valueError) {
                   this.logger.error(
                     `Error duplicating option value "${originalValue.option_value}": ${valueError.message}`
@@ -3550,7 +3131,7 @@ class ProductServiceLayer {
       this.logger.error(`Error duplicating product: ${err.message}`);
       throw err;
     }
-  };
+  }
 
   // unpublish product
   async unpublishProduct(productId) {
